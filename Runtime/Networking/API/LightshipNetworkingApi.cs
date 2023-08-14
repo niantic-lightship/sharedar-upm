@@ -151,19 +151,19 @@ namespace Niantic.Lightship.SharedAR.Networking.API
 
 #if NIANTIC_LIGHTSHIP_AR_LOADER_ENABLED
 
-        [DllImport(_LightshipPlugin.Name, EntryPoint = "Lightship_ARDK_Unity_Sharc_Room_Init")]
+        [DllImport(LightshipPlugin.Name, EntryPoint = "Lightship_ARDK_Unity_Sharc_Room_Init")]
         private static extern IntPtr _InitRoom(IntPtr unityContextHandle, string roomId);
 
-        [DllImport(_LightshipPlugin.Name, EntryPoint = "Lightship_ARDK_Sharc_Room_Join")]
+        [DllImport(LightshipPlugin.Name, EntryPoint = "Lightship_ARDK_Sharc_Room_Join")]
         private static extern void _Join(IntPtr nativeHandle);
 
-        [DllImport(_LightshipPlugin.Name, EntryPoint = "Lightship_ARDK_Sharc_Room_Leave")]
+        [DllImport(LightshipPlugin.Name, EntryPoint = "Lightship_ARDK_Sharc_Room_Leave")]
         private static extern void _Leave(IntPtr nativeHandle);
 
-        [DllImport(_LightshipPlugin.Name, EntryPoint = "Lightship_ARDK_Sharc_Release")]
+        [DllImport(LightshipPlugin.Name, EntryPoint = "Lightship_ARDK_Sharc_Release")]
         private static extern void _Release(IntPtr nativeHandle);
 
-        [DllImport(_LightshipPlugin.Name, EntryPoint = "Lightship_ARDK_Sharc_Networking_SendData")]
+        [DllImport(LightshipPlugin.Name, EntryPoint = "Lightship_ARDK_Sharc_Networking_SendData")]
         private static extern void _SendData
         (
             IntPtr nativeHandle,
@@ -174,16 +174,16 @@ namespace Niantic.Lightship.SharedAR.Networking.API
             UInt64 peerIdentifiersSize
         );
 
-        [DllImport(_LightshipPlugin.Name, EntryPoint = "Lightship_ARDK_Sharc_Networking_GetNetworkingState")]
+        [DllImport(LightshipPlugin.Name, EntryPoint = "Lightship_ARDK_Sharc_Networking_GetNetworkingState")]
         private static extern byte _GetNetworkingState(IntPtr nativeHandle);
 
-        [DllImport(_LightshipPlugin.Name, EntryPoint = "Lightship_ARDK_Sharc_Networking_GetSelfPeerId")]
+        [DllImport(LightshipPlugin.Name, EntryPoint = "Lightship_ARDK_Sharc_Networking_GetSelfPeerId")]
         private static extern UInt32 _GetSelfPeerId
         (
             IntPtr nativeHandle
         );
 
-        [DllImport(_LightshipPlugin.Name, EntryPoint = "Lightship_ARDK_Sharc_Networking_GetPeerIds")]
+        [DllImport(LightshipPlugin.Name, EntryPoint = "Lightship_ARDK_Sharc_Networking_GetPeerIds")]
         private static extern UInt64 _GetPeerIds
         (
             IntPtr nativeHandle,
@@ -191,7 +191,7 @@ namespace Niantic.Lightship.SharedAR.Networking.API
             UInt64 maxPeers
         );
 
-        [DllImport(_LightshipPlugin.Name, EntryPoint = "Lightship_ARDK_Sharc_Networking_SetNetworkingEventCallback")]
+        [DllImport(LightshipPlugin.Name, EntryPoint = "Lightship_ARDK_Sharc_Networking_SetNetworkingEventCallback")]
         private static extern void _SetConnectionEventCallback
         (
             IntPtr managedHandle,
@@ -199,7 +199,7 @@ namespace Niantic.Lightship.SharedAR.Networking.API
             INetworkingApi.NetworkEventCallback cb
         );
 
-        [DllImport(_LightshipPlugin.Name, EntryPoint = "Lightship_ARDK_Sharc_Networking_SetPeerAddedCallback")]
+        [DllImport(LightshipPlugin.Name, EntryPoint = "Lightship_ARDK_Sharc_Networking_SetPeerAddedCallback")]
         private static extern void _SetPeerAddedCallback
         (
             IntPtr managedHandle,
@@ -207,7 +207,7 @@ namespace Niantic.Lightship.SharedAR.Networking.API
             INetworkingApi.PeerAddedOrRemovedCallback cb
         );
 
-        [DllImport(_LightshipPlugin.Name, EntryPoint = "Lightship_ARDK_Sharc_Networking_SetPeerRemovedCallback")]
+        [DllImport(LightshipPlugin.Name, EntryPoint = "Lightship_ARDK_Sharc_Networking_SetPeerRemovedCallback")]
         private static extern void _SetPeerRemovedCallback
         (
             IntPtr managedHandle,
@@ -215,7 +215,7 @@ namespace Niantic.Lightship.SharedAR.Networking.API
             INetworkingApi.PeerAddedOrRemovedCallback cb
         );
 
-        [DllImport(_LightshipPlugin.Name, EntryPoint = "Lightship_ARDK_Sharc_Networking_SetDataReceivedCallback")]
+        [DllImport(LightshipPlugin.Name, EntryPoint = "Lightship_ARDK_Sharc_Networking_SetDataReceivedCallback")]
         private static extern void _SetDataReceivedCallback
         (
             IntPtr managedHandle,

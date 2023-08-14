@@ -12,25 +12,24 @@ namespace Niantic.Lightship.SharedAR.Colocalization
     // @note This is an experimental feature. Experimental features should not be used in
     // production products as they are subject to breaking changes, not officially supported, and
     // may be deprecated without notice
-    public class RuntimeImageLibrary : MonoBehaviour
+    internal class RuntimeImageLibrary : MonoBehaviour
     {
-        [SerializeField]
         internal ARTrackedImageManager _imageTracker;
 
-        [Serializable]
         internal struct ImageAndWidth
         {
             public Texture2D textureInRBG24;
             public float widthInMeters;
         }
 
-        [SerializeField]
         internal ImageAndWidth[] _images;
 
         private AddReferenceImageJobState _imageJob;
         private MutableRuntimeReferenceImageLibrary _mutableLibrary;
         private bool _isRuntimeImageLibraryInitialized;
         public string TrackingImageName { get; private set; }
+
+        private AddReferenceImageJobStatus _previousStatus;
 
         protected void Start()
         {
@@ -56,8 +55,34 @@ namespace Niantic.Lightship.SharedAR.Colocalization
         }
         private void InitializeRuntimeImageLibrary()
         {
-            RuntimeReferenceImageLibrary runtimeLibrary = _imageTracker.CreateRuntimeLibrary();
-            _mutableLibrary = runtimeLibrary as MutableRuntimeReferenceImageLibrary;
+            // Check if reference image library already exists and image was registered
+            var refImageLibrary = _imageTracker.referenceLibrary;
+            if (refImageLibrary != null && _images.Length > 0)
+            {
+                var image = _images[0];
+                for (var i=0; i<refImageLibrary.count; i++)
+                {
+                    var refimg = refImageLibrary[i];
+                    if (refimg.name == image.textureInRBG24.name &&
+                        refimg.texture == image.textureInRBG24)
+                    {
+                        // target image is found in the existing image library. Ready to start tracking
+                        _mutableLibrary = refImageLibrary as MutableRuntimeReferenceImageLibrary;
+                        _imageTracker.enabled = true;
+                        TrackingImageName = refimg.name;
+                        enabled = false;
+                        return;
+                    }
+                }
+            }
+
+            // No image library yet. Create a new one
+            if (refImageLibrary == null)
+            {
+                RuntimeReferenceImageLibrary runtimeLibrary = _imageTracker.CreateRuntimeLibrary();
+                _mutableLibrary = runtimeLibrary as MutableRuntimeReferenceImageLibrary;
+                _imageTracker.referenceLibrary = _mutableLibrary;
+            }
 
             // Static dictionary of images taken by the user from the rest of the game.
             foreach (var image in _images)
@@ -70,8 +95,6 @@ namespace Niantic.Lightship.SharedAR.Colocalization
                 TrackingImageName = image.textureInRBG24.name;
                 break;
             }
-            _imageTracker.referenceLibrary = _mutableLibrary;
-            _imageTracker.enabled = true;
 
             _isRuntimeImageLibraryInitialized = true;
         }
@@ -82,10 +105,18 @@ namespace Niantic.Lightship.SharedAR.Colocalization
             {
                 return;
             }
+
+            if (_previousStatus != AddReferenceImageJobStatus.Success &&
+                _imageJob.status == AddReferenceImageJobStatus.Success)
+            {
+                Debug.Log("Target image loaded");
+                // Enable ARTrackedImageManager after image library is ready
+                _imageTracker.enabled = true;
+                enabled = false;
+            }
             if (_imageJob.status  == AddReferenceImageJobStatus.Pending)
             {
-                Debug.Log("status pending");
-                enabled = false;
+                // do nothing
             }
             else if (_imageJob.status == AddReferenceImageJobStatus.ErrorInvalidImage)
             {
@@ -97,6 +128,8 @@ namespace Niantic.Lightship.SharedAR.Colocalization
                 Debug.LogError("RuntimeImageLibrary failed, ErrorUnknown");
                 enabled = false;
             }
+
+            _previousStatus = _imageJob.status;
         }
 }
 }

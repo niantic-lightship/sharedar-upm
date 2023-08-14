@@ -1,11 +1,12 @@
 using System;
+using System.Runtime.CompilerServices;
 using UnityEngine;
 using UnityEngine.XR.ARFoundation;
 using UnityEngine.XR.ARSubsystems;
 
 namespace Niantic.Lightship.SharedAR.Colocalization
 {
-    public class ImageTargetColocalization
+    internal class ImageTargetColocalization
     {
         // @note This is an experimental feature. Experimental features should not be used in
         // production products as they are subject to breaking changes, not officially supported, and
@@ -68,6 +69,7 @@ namespace Niantic.Lightship.SharedAR.Colocalization
 
         public void Start()
         {
+            Debug.Log("ImageTargetColocalization::Start()");
             if (_imageTrackingManager == null)
             {
                 return;
@@ -75,7 +77,6 @@ namespace Niantic.Lightship.SharedAR.Colocalization
 
             _selfColocalizationState = ColocalizationState.Colocalizing;
             InvokeStateUpdated(_selfColocalizationState);
-            _imageTrackingManager.enabled = true;
             _imageTrackingManager.requestedMaxNumberOfMovingImages = 1;
             _imageTrackingManager.trackedImagesChanged += OnTrackingChanged;
         }
@@ -105,18 +106,6 @@ namespace Niantic.Lightship.SharedAR.Colocalization
                 value(new ColocalizationStateUpdatedArgs(_selfColocalizationState));
             }
             remove { _stateUpdated -= value; }
-        }
-
-        public void LocalPoseToAligned(Matrix4x4 poseInLocalSpace, out Matrix4x4 poseInAlignedSpace)
-        {
-            if (_selfColocalizationState != ColocalizationState.Colocalized &&
-                _selfColocalizationState != ColocalizationState.LimitedTracking)
-            {
-                poseInAlignedSpace = Matrix4x4.identity;
-                return;
-            }
-
-            poseInAlignedSpace = ConvertToNodeSpace(poseInLocalSpace);
         }
 
         public ColocalizationAlignmentResult AlignedPoseToLocal
@@ -196,12 +185,6 @@ namespace Niantic.Lightship.SharedAR.Colocalization
                     InvokeStateUpdated(_selfColocalizationState);
                 }
             }
-        }
-
-        // Convert from local space to node space (assumes 0,0,0)
-        private Matrix4x4 ConvertToNodeSpace(Matrix4x4 pose)
-        {
-            return AlignedSpaceOrigin.inverse * pose;
         }
 
         // Convert from node space to local space (assumes 0,0,0)

@@ -29,7 +29,7 @@ namespace Niantic.Lightship.SharedAR.Colocalization
             VpsColocalization = 0,
             ImageTrackingColocalization,
 
-            SkipColocalization = 999
+            MockColocalization = 999
         }
 
         /// <summary>
@@ -50,33 +50,26 @@ namespace Niantic.Lightship.SharedAR.Colocalization
 
         [SerializeField]
         private ColocalizationType _colocalizationType;
-        /// <summary>
-        /// Get the ColocalizationType
-        /// </summary>
-        /// <returns>Colocalization type set on the SharedSpaceManager</returns>
-        [PublicAPI]
-        public ColocalizationType GetColocalizationType()
-        {
-            return _colocalizationType;
-        }
 
         [SerializeField]
         private GameObject _sharedArRootPrefab;
 
         // needed for VPS colocalization
         [SerializeField]
+        [Tooltip("Fill this field if there's an existing location manager in the scene. Otherwise, this component will make one itself.")]
         public ARLocationManager _arLocationManager;
+
+        // needed for Image tracking colocalization
         [SerializeField]
-        private GameObject _anchorPrefab;
+        private Texture2D _targetImage;
+
+        [SerializeField]
+        private float _targetImageSize;
+
         private GameObject _arLocationObject;
         private ARLocation _arLocation;
         private bool _didStartTracking;
 
-        // needed for Image tracking colocalization
-        //[SerializeField] // TODO: re-enable later
-        private Texture2D _targetImage;
-        //[SerializeField] // TODO: re-enable later
-        private float _targetImageSize;
         private ImageTargetColocalization _imageTargetColocalization;
         private bool _imageTrackingColocalizedOnce = false;
 
@@ -91,6 +84,16 @@ namespace Niantic.Lightship.SharedAR.Colocalization
         /// </summary>
         [PublicAPI]
         public GameObject _sharedArOriginObject { get; private set; }
+
+        /// <summary>
+        /// Get the ColocalizationType
+        /// </summary>
+        /// <returns>Colocalization type set on the SharedSpaceManager</returns>
+        [PublicAPI]
+        public ColocalizationType GetColocalizationType()
+        {
+            return _colocalizationType;
+        }
 
         // Do object creation in awake so that components are ready
         void Awake()
@@ -107,15 +110,12 @@ namespace Niantic.Lightship.SharedAR.Colocalization
                         _arLocationObject = new GameObject("ARLocation");
                         _arLocationObject.transform.parent = gameObject.transform;
                         _arLocation = _arLocationObject.AddComponent<ARLocation>();
-                        if (_anchorPrefab)
-                        {
-                            // add an anchor prefab under the ARLocation
-                            Instantiate(
-                                _anchorPrefab,
-                                Vector3.zero,
-                                Quaternion.identity,
-                                _arLocationObject.transform);
-                        }
+                    }
+                    else
+                    {
+                        // Custom ARLocationManager is set
+                        // Create the shared root under XR Origin but will reparent later
+                        MakeOriginAndAdd<SharedAROrigin>(gameObject.transform);
                     }
                     break;
                 }
@@ -123,9 +123,8 @@ namespace Niantic.Lightship.SharedAR.Colocalization
                 {
                     break;
                 }
-                case ColocalizationType.SkipColocalization:
+                case ColocalizationType.MockColocalization:
                 {
-                    MakeOriginAndAdd<SharedAROrigin>(gameObject.transform);
                     break;
                 }
                 default:
@@ -150,9 +149,9 @@ namespace Niantic.Lightship.SharedAR.Colocalization
                 {
                     break;
                 }
-                case ColocalizationType.SkipColocalization:
+                case ColocalizationType.MockColocalization:
                 {
-                    StartCoroutine(InvokeTrackingEventForSkipColocalization());
+                    // nothing to do
                     break;
                 }
                 default:
@@ -198,7 +197,7 @@ namespace Niantic.Lightship.SharedAR.Colocalization
                     }
                     break;
                 }
-                case ColocalizationType.SkipColocalization:
+                case ColocalizationType.MockColocalization:
                 {
                     // nothing to do
                     break;
@@ -215,7 +214,7 @@ namespace Niantic.Lightship.SharedAR.Colocalization
         /// Start tracking using selected colocalization method
         /// </summary>
         /// <param name="target">A text string to identify target. For VPS colocalization, this should be AR
-        /// Location payload</param>
+        /// Location payload. This parameter is ignored in ImageTrackingColocalization and MockColocalization</param>
         [PublicAPI]
         public void StartTracking(string target)
         {
@@ -229,6 +228,8 @@ namespace Niantic.Lightship.SharedAR.Colocalization
                         _arLocationManager.StartTracking(_arLocation);
                         _didStartTracking = true;
                     }
+                    // Create the shared root under XR Origin but will reparent later
+                    MakeOriginAndAdd<SharedAROrigin>(gameObject.transform);
                     break;
                 }
                 case ColocalizationType.ImageTrackingColocalization:
@@ -236,6 +237,7 @@ namespace Niantic.Lightship.SharedAR.Colocalization
                     // Add image tracking
                     var arImageTrackedManager = gameObject.AddComponent<ARTrackedImageManager>();
                     arImageTrackedManager.requestedMaxNumberOfMovingImages = 1;
+                    arImageTrackedManager.enabled = false;
                     // TODO: Refactor RuntimeImageLibrary to simplify code here
                     var imageLib = gameObject.AddComponent<RuntimeImageLibrary>();
                     imageLib._imageTracker = arImageTrackedManager;
@@ -251,9 +253,13 @@ namespace Niantic.Lightship.SharedAR.Colocalization
                     _imageTargetColocalization.ColocalizationStateUpdated += OnImageTrackingColocalizationStateUpdated;
                     break;
                 }
-                case ColocalizationType.SkipColocalization:
+                case ColocalizationType.MockColocalization:
                 {
-                    // nothing to start when skipping colocalization
+                    MakeOriginAndAdd<SharedAROrigin>(gameObject.transform);
+                    // Immediately invoke tracking event
+                    var args = new SharedSpaceManagerStateChangeEventArgs();
+                    args.Tracking = true;
+                    sharedSpaceManagerStateChanged?.Invoke(args);
                     break;
                 }
                 default:
@@ -306,12 +312,14 @@ namespace Niantic.Lightship.SharedAR.Colocalization
         // handling ARLocation state change
         private void OnARLocationStateChanged(ARLocationTrackedEventArgs arLocationArgs)
         {
-            if (_sharedArOriginObject == null && arLocationArgs.Tracking)
+            if (_sharedArOriginObject != null && arLocationArgs.Tracking)
             {
+                // Re-parent the shared root object under localized AR Location object
                 var location = arLocationArgs.ARLocation.gameObject;
-                MakeOriginAndAdd<SharedAROrigin>(location.transform);
+                _sharedArOriginObject.transform.SetParent(location.transform, false);
             }
 
+            // invoke a state change event
             var args = new SharedSpaceManagerStateChangeEventArgs();
             args.Tracking = arLocationArgs.Tracking;
             sharedSpaceManagerStateChanged?.Invoke(args);
@@ -336,14 +344,6 @@ namespace Niantic.Lightship.SharedAR.Colocalization
                 args.Tracking = false;
                 sharedSpaceManagerStateChanged?.Invoke(args);
             }
-        }
-
-        private IEnumerator InvokeTrackingEventForSkipColocalization()
-        {
-            yield return null;
-            var args = new SharedSpaceManagerStateChangeEventArgs();
-            args.Tracking = true;
-            sharedSpaceManagerStateChanged?.Invoke(args);
         }
 
         private T MakeOriginAndAdd<T>(Transform root) where T : SharedAROrigin

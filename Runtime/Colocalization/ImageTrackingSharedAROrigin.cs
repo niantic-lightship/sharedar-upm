@@ -6,7 +6,7 @@ using Niantic.Lightship.AR;
 
 namespace Niantic.Lightship.SharedAR.Colocalization
 {
-    public class ImageTrackingSharedAROrigin : SharedAROrigin
+    internal class ImageTrackingSharedAROrigin : SharedAROrigin
     {
         [SerializeField]
         private ARTrackedImageManager _imageTracker;
@@ -38,7 +38,13 @@ namespace Niantic.Lightship.SharedAR.Colocalization
                 ImageTargetColocalization.ColocalizationAlignmentResult.Success)
             {
                 transform.position = sharedOrigin.ToPosition();
-                transform.rotation = sharedOrigin.ToRotation();
+
+                // Change the rotation of the anchor in global space to make it so the
+                // anchor's up-axis is facing Unity's up-axis
+                // In matrix form: anchor_with_unity_up = anchor_up_to_unity_up * anchor
+                var rotation = sharedOrigin.ToRotation();
+                var anchorUpAxis = rotation * Vector3.up;
+                transform.rotation = Quaternion.FromToRotation(anchorUpAxis, Vector3.up) * rotation;
             }
         }
     }
