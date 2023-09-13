@@ -1,35 +1,37 @@
 // Copyright 2023 Niantic, Inc. All Rights Reserved.
 
 using System;
+using Niantic.Lightship.AR.Utilities;
 
 namespace Niantic.Lightship.SharedAR.Datastore
 {
-    // Result of the Datastore operation
-    // @note This is an experimental feature. Experimental features should not be used in
-    // production products as they are subject to breaking changes, not officially supported, and
-    // may be deprecated without notice
+    /// <summary>
+    /// Result of the Datastore operation
+    /// </summary>
+    [PublicAPI]
     public enum Result : Byte
     {
-        Invalid = 0,
-        Success,
-        Error, // too generic
-        NotAuthorized
-
-        // TODO: add more detailed status/error as needed
+        Success = 0,
+        Error,
     };
 
-    /// @brief enum representing type of operation
+    /// <summary>
+    ///  Enum representing type of Datastore operation
+    /// </summary>
+    [PublicAPI]
     public enum DatastoreOperationType : Byte
     {
-        Invalid = 0,
-        Set,
+        Set = 0,
         Get,
         Delete,
         ServerChangeUpdated,
         ServerChangeDeleted
     };
 
-    /// @brief callback args
+    /// <summary>
+    /// Data passed in the Datastore callback
+    /// </summary>
+    [PublicAPI]
     public struct DatastoreCallbackArgs {
         public DatastoreOperationType OperationType { get; set; }
         public Result Result  { get; set; }
@@ -56,34 +58,45 @@ namespace Niantic.Lightship.SharedAR.Datastore
         }
     };
 
-    // Server-backed data storage that is associated with sessions or rooms.
-    // Peers can set, update, and delete Key/Value pairs, and have the server notify
-    //   all other peers in the session when updates occur.
-    // @note This is an experimental feature. Experimental features should not be used in
-    // production products as they are subject to breaking changes, not officially supported, and
-    // may be deprecated without notice
-    public interface IDatastore :
-        IDisposable
+    /// <summary>
+    /// Server-backed data storage that is associated with sessions or rooms.
+    /// Peers can set, update, and delete Key/Value pairs, and have the server notify
+    /// all other peers in the session when updates occur.
+    /// </summary>
+    [PublicAPI]
+    public interface IDatastore : IDisposable
     {
-        /// @brief Set/Add data into storage asynchronously
-        /// @param req_id ID to distinguish to identify th originated request in callback
-        /// @param key Key of the data
-        /// @param value Value to set
+        /// <summary>
+        /// Set/Add data into the server storage asynchronously
+        /// </summary>
+        /// <param name="requestId">ID to distinguish to identify th originated request in callback</param>
+        /// <param name="key">Key of the data</param>
+        /// <param name="value">Value to set</param>
+        [PublicAPI]
         void SetData(UInt32 requestId, string key, byte[] value);
 
-        /// @brief Set data into storage asynchronously
-        /// @param req_id ID to distinguish to identify th originated request in callback
-        /// @param key Key of the data
+        /// <summary>
+        /// Get data from the server storage asynchronously
+        /// </summary>
+        /// <param name="requestId">ID to distinguish to identify th originated request in callback</param>
+        /// <param name="key">Key of the data</param>
+        [PublicAPI]
         void GetData(UInt32 requestId, string key);
 
-        /// @brief Delete the key-value pair from the storage asynchronously
-        /// @param req_id ID to distinguish to identify th originated request in callback
-        /// @param key Key of the data to delete
+        /// <summary>
+        /// Delete the key-value pair from the server storage asynchronously
+        /// </summary>
+        /// <param name="requestId">ID to distinguish to identify th originated request in callback</param>
+        /// <param name="key">Key of the data to delete</param>
+        [PublicAPI]
         void DeleteData(UInt32 requestId, string key);
 
-        /// @brief Callback to listen to server response or changes
-        /// This is called either when receiving a response from the request, or data changed
+        /// <summary>
+        /// Callback to listen to server response or changes
+        /// This is called either when receiving a response from the own request, or data changed
         /// on server side
+        /// </summary>
+        [PublicAPI]
         event Action<DatastoreCallbackArgs> DatastoreCallback;
 
     }

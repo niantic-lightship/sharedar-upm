@@ -41,6 +41,12 @@ namespace Niantic.Lightship.SharedAR.Rooms
         public INetworking Networking { get; }
 
         /// <summary>
+        /// Get IDatastore object to access realtime key-value store attached to the room
+        /// </summary>
+        [PublicAPI]
+        public IDatastore Datastore { get; }
+
+        /// <summary>
         /// Leave from the room. Disconnect from the server and no longer can send/receive data afterwards.
         /// </summary>
         [PublicAPI]

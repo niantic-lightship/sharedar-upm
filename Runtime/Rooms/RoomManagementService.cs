@@ -165,7 +165,7 @@ namespace Niantic.Lightship.SharedAR.Rooms
             _serviceImpl.DestroyRoom(request, out var status);
             if (status != RoomManagementServiceStatus.Ok)
             {
-                Debug.LogError($"Room Management Destroy request failed with status {status}");
+                Debug.LogWarning($"Room Management Destroy request failed with status {status}");
                 Debug.Log($"|{roomId}|");
                 return status;
             }

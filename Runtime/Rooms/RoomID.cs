@@ -40,7 +40,7 @@ namespace Niantic.Lightship.SharedAR.Rooms
             return _string.GetHashCode();
         }
 
-        // Implementing IEqualable
+        // Implementing IEquatable
         public bool Equals(RoomID info)
         {
             return info != null && _string == info.ToString();

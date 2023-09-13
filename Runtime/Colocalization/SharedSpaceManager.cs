@@ -57,18 +57,20 @@ namespace Niantic.Lightship.SharedAR.Colocalization
         // needed for VPS colocalization
         [SerializeField]
         [Tooltip("Fill this field if there's an existing location manager in the scene. Otherwise, this component will make one itself.")]
-        public ARLocationManager _arLocationManager;
+        private ARLocationManager _arLocationManager;
 
         // needed for Image tracking colocalization
+        [Obsolete]
         [SerializeField]
         private Texture2D _targetImage;
 
+        [Obsolete]
         [SerializeField]
         private float _targetImageSize;
 
         private GameObject _arLocationObject;
         private ARLocation _arLocation;
-        private bool _didStartTracking;
+        private bool _usingCustomArLocationManager;
 
         private ImageTargetColocalization _imageTargetColocalization;
         private bool _imageTrackingColocalizedOnce = false;
@@ -76,14 +78,25 @@ namespace Niantic.Lightship.SharedAR.Colocalization
         /// <summary>
         /// Access IRoom assigned to colocalization session
         /// </summary>
+        [Obsolete]
         [PublicAPI]
         public IRoom _room { get; private set; }
 
         /// <summary>
         /// Reference to the GameObject representing shared origin/root
         /// </summary>
+        [Obsolete]
         [PublicAPI]
-        public GameObject _sharedArOriginObject { get; private set; }
+        public GameObject _sharedArOriginObject
+        {
+            get { return SharedArOriginObject;}
+        }
+
+        /// <summary>
+        /// Reference to the GameObject representing shared origin/root
+        /// </summary>
+        [PublicAPI]
+        public GameObject SharedArOriginObject { get; private set; }
 
         /// <summary>
         /// Get the ColocalizationType
@@ -95,14 +108,27 @@ namespace Niantic.Lightship.SharedAR.Colocalization
             return _colocalizationType;
         }
 
+
+        /// <summary>
+        /// Getting currently active ISharedSpaceTrackingOptions set in the SharedSpaceManager
+        /// </summary>
+        [PublicAPI]
+        public ISharedSpaceTrackingOptions SharedSpaceTrackingOptions { get; private set; }
+
+        /// <summary>
+        /// Getting currently active ISharedSpaceRoomOptions set in the SharedSpaceManager
+        /// </summary>
+        [PublicAPI]
+        public ISharedSpaceRoomOptions SharedSpaceRoomOptions { get; private set; }
+
         // Do object creation in awake so that components are ready
-        void Awake()
+        private void Awake()
         {
             switch (_colocalizationType)
             {
                 case ColocalizationType.VpsColocalization:
                 {
-                    // Add ARPersistentAnchorManager if not avaialable
+                    // Add ARPersistentAnchorManager if not available
                     if (!_arLocationManager)
                     {
                         // No ARLocationManager set. Add ARLocationManager and ARLocation
@@ -110,12 +136,14 @@ namespace Niantic.Lightship.SharedAR.Colocalization
                         _arLocationObject = new GameObject("ARLocation");
                         _arLocationObject.transform.parent = gameObject.transform;
                         _arLocation = _arLocationObject.AddComponent<ARLocation>();
+                        _usingCustomArLocationManager = false;
                     }
                     else
                     {
                         // Custom ARLocationManager is set
                         // Create the shared root under XR Origin but will reparent later
                         MakeOriginAndAdd<SharedAROrigin>(gameObject.transform);
+                        _usingCustomArLocationManager = true;
                     }
                     break;
                 }
@@ -136,7 +164,7 @@ namespace Niantic.Lightship.SharedAR.Colocalization
         }
 
         // Events and coroutines relying on other components in start
-        void Start()
+        private void Start()
         {
             switch (_colocalizationType)
             {
@@ -162,11 +190,11 @@ namespace Niantic.Lightship.SharedAR.Colocalization
             }
         }
 
-        void OnDestroy()
+        private void OnDestroy()
         {
-            if (_sharedArOriginObject)
+            if (SharedArOriginObject)
             {
-                Destroy(_sharedArOriginObject);
+                Destroy(SharedArOriginObject);
             }
 
             switch (_colocalizationType)
@@ -175,9 +203,18 @@ namespace Niantic.Lightship.SharedAR.Colocalization
                 {
                     _arLocationManager.locationTrackingStateChanged -= OnARLocationStateChanged;
                     // Only call StopTracking if we are the ones to call Start
-                    if (_didStartTracking)
+                    if (!_usingCustomArLocationManager)
                     {
                         _arLocationManager.StopTracking();
+                        var vpsTrackingOptions = SharedSpaceTrackingOptions as SharedSpaceVpsTrackingOptions;
+                        if (vpsTrackingOptions != null)
+                        {
+                            if (vpsTrackingOptions._arLocationCreated && vpsTrackingOptions._arLocation)
+                            {
+                                Destroy(vpsTrackingOptions._arLocation);
+                            }
+                        }
+
                     }
 
                     // If we created this to wrap a payload, destroy it now
@@ -210,11 +247,110 @@ namespace Niantic.Lightship.SharedAR.Colocalization
             }
         }
 
+        // Start tracking and prepare room to join
+
+        /// <summary>
+        /// Start tracking and prepare a Room.
+        /// </summary>
+        /// <param name="trackingOptions">Tracking settings</param>
+        /// <param name="roomOptions">Room settings</param>
+        [PublicAPI]
+        public void StartSharedSpace(ISharedSpaceTrackingOptions trackingOptions, ISharedSpaceRoomOptions roomOptions)
+        {
+            SharedSpaceTrackingOptions = trackingOptions;
+            SharedSpaceRoomOptions = roomOptions;
+            //
+            switch (_colocalizationType)
+            {
+                case ColocalizationType.VpsColocalization:
+                {
+                    var vpsTrackingOptions = SharedSpaceTrackingOptions as SharedSpaceVpsTrackingOptions;
+                    if (vpsTrackingOptions != null)
+                    {
+                        if (!_usingCustomArLocationManager)
+                        {
+                            // Create the shared root under XR Origin but will reparent later
+                            MakeOriginAndAdd<SharedAROrigin>(gameObject.transform);
+                            // start vps tracking
+                            _arLocationManager.SetARLocations(vpsTrackingOptions._arLocation);
+                            _arLocationManager.StartTracking();
+                        }
+                    }
+                    else
+                    {
+                        Debug.LogError("Colocalization type selected and trackingOptions type does not match." +
+                            "Both has to be vps tracking.");
+                    }
+                    break;
+                }
+                case ColocalizationType.ImageTrackingColocalization:
+                {
+                    var imageTrackingOptions = SharedSpaceTrackingOptions as SharedSpaceImageTrackingOptions;
+                    if (imageTrackingOptions != null)
+                    {
+                        // Add image tracking
+                        var arImageTrackedManager = gameObject.AddComponent<ARTrackedImageManager>();
+                        arImageTrackedManager.requestedMaxNumberOfMovingImages = 1;
+                        arImageTrackedManager.enabled = false;
+                        // TODO: Refactor RuntimeImageLibrary to simplify code here
+                        var imageLib = gameObject.AddComponent<RuntimeImageLibrary>();
+                        imageLib._imageTracker = arImageTrackedManager;
+                        imageLib._images = new RuntimeImageLibrary.ImageAndWidth[1];
+                        imageLib._images[0] = new RuntimeImageLibrary.ImageAndWidth();
+                        imageLib._images[0].textureInRBG24 = imageTrackingOptions._targetImage;
+                        imageLib._images[0].widthInMeters = imageTrackingOptions._widthInMeters;
+
+                        // Add ImageTrackingSharedAROrigin to the sharedOrigin object
+                        var sharedOrigin = MakeOriginAndAdd<ImageTrackingSharedAROrigin>(gameObject.transform);
+                        _imageTargetColocalization = new ImageTargetColocalization(arImageTrackedManager, imageLib);
+                        sharedOrigin._colocalizer = _imageTargetColocalization;
+                        _imageTargetColocalization.ColocalizationStateUpdated += OnImageTrackingColocalizationStateUpdated;
+                    }
+                    else
+                    {
+                        Debug.LogError("Colocalization type selected and trackingOptions type does not match." +
+                            "Both has to be image tracking.");
+                    }
+                    break;
+                }
+                case ColocalizationType.MockColocalization:
+                {
+                    var mockTrackingOptions = SharedSpaceTrackingOptions as SharedSpaceMockTrackingOptions;
+                    if (mockTrackingOptions != null)
+                    {
+                        MakeOriginAndAdd<SharedAROrigin>(gameObject.transform);
+                        // Immediately invoke tracking event
+                        var args = new SharedSpaceManagerStateChangeEventArgs();
+                        args.Tracking = true;
+                        sharedSpaceManagerStateChanged?.Invoke(args);
+                    }
+                    else
+                    {
+                        Debug.LogError("Colocalization type selected and trackingOptions type does not match." +
+                            "Both has to be mock tracking.");
+                    }
+                    break;
+                }
+                default:
+                {
+                    Debug.Log("Unknown colocalization type selected. unable to localize");
+                    break;
+                }
+            }
+            //
+            var lightshipRoomOptions = SharedSpaceRoomOptions as SharedSpaceLightshipRoomOptions;
+            if (lightshipRoomOptions != null)
+            {
+                lightshipRoomOptions.PrepareRoom();
+            }
+        }
+
         /// <summary>
         /// Start tracking using selected colocalization method
         /// </summary>
         /// <param name="target">A text string to identify target. For VPS colocalization, this should be AR
         /// Location payload. This parameter is ignored in ImageTrackingColocalization and MockColocalization</param>
+        [Obsolete]
         [PublicAPI]
         public void StartTracking(string target)
         {
@@ -225,8 +361,8 @@ namespace Niantic.Lightship.SharedAR.Colocalization
                     if (_arLocationManager && _arLocation)
                     {
                         _arLocation.Payload = new ARPersistentAnchorPayload(target);
-                        _arLocationManager.StartTracking(_arLocation);
-                        _didStartTracking = true;
+                        _arLocationManager.SetARLocations(_arLocation);
+                        _arLocationManager.StartTracking();
                     }
                     // Create the shared root under XR Origin but will reparent later
                     MakeOriginAndAdd<SharedAROrigin>(gameObject.transform);
@@ -279,6 +415,7 @@ namespace Niantic.Lightship.SharedAR.Colocalization
         /// reliably depends on amount of data to sync and network environment. Only used when creating a new room.
         /// </param>
         /// <param name="description">Description of the room. Only used when creating a new room.</param>
+        [Obsolete]
         [PublicAPI]
         public void PrepareRoom(string roomName, int capacity, string description)
         {
@@ -312,11 +449,11 @@ namespace Niantic.Lightship.SharedAR.Colocalization
         // handling ARLocation state change
         private void OnARLocationStateChanged(ARLocationTrackedEventArgs arLocationArgs)
         {
-            if (_sharedArOriginObject != null && arLocationArgs.Tracking)
+            if (SharedArOriginObject != null && arLocationArgs.Tracking)
             {
                 // Re-parent the shared root object under localized AR Location object
                 var location = arLocationArgs.ARLocation.gameObject;
-                _sharedArOriginObject.transform.SetParent(location.transform, false);
+                SharedArOriginObject.transform.SetParent(location.transform, false);
             }
 
             // invoke a state change event
@@ -348,20 +485,20 @@ namespace Niantic.Lightship.SharedAR.Colocalization
 
         private T MakeOriginAndAdd<T>(Transform root) where T : SharedAROrigin
         {
-            if (_sharedArOriginObject != null)
+            if (SharedArOriginObject != null)
             {
                 Debug.LogError("Shared origin already exists");
                 return null;
             }
 
-            _sharedArOriginObject = Instantiate(_sharedArRootPrefab, root, false);
-            var networkObject = _sharedArOriginObject.GetComponent<NetworkObject>();
+            SharedArOriginObject = Instantiate(_sharedArRootPrefab, root, false);
+            var networkObject = SharedArOriginObject.GetComponent<NetworkObject>();
 
             // When Netcode connects the host's version of the sharedArOrigin will override
             // the transform of the origin unless we setup this callback to return false.
             networkObject.IncludeTransformWhenSpawning = (x) => false;
 
-            return _sharedArOriginObject.AddComponent<T>();
+            return SharedArOriginObject.AddComponent<T>();
         }
     }
 } // namespace

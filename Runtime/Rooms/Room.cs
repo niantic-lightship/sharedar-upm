@@ -8,9 +8,6 @@ using UnityEngine;
 
 namespace Niantic.Lightship.SharedAR.Rooms
 {
-    /// @note This is an experimental feature. Experimental features should not be used in
-    /// production products as they are subject to breaking changes, not officially supported, and
-    /// may be deprecated without notice
     public class Room :
         IRoom
     {
@@ -20,13 +17,23 @@ namespace Niantic.Lightship.SharedAR.Rooms
         }
 
         public RoomParams RoomParams { get; internal set; }
-        public INetworking Networking { get; internal set; }
+        public INetworking Networking { get; private set; }
+        public IDatastore Datastore { get; private set; }
 
         public void Initialize()
         {
             if (Networking == null)
             {
                 Networking = new LightshipNetworking("", RoomParams.RoomID);
+            }
+
+            if (Datastore == null)
+            {
+                var lightshipNetworking = Networking as LightshipNetworking;
+                if (lightshipNetworking != null)
+                {
+                    Datastore = new LightshipDatastore(lightshipNetworking._nativeHandle);
+                }
             }
         }
 
@@ -53,6 +60,11 @@ namespace Niantic.Lightship.SharedAR.Rooms
             {
                 Networking.Dispose();
                 Networking = null;
+            }
+            if (Datastore != null)
+            {
+                Datastore.Dispose();
+                Datastore = null;
             }
         }
     }

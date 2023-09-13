@@ -21,7 +21,7 @@ namespace Niantic.Lightship.SharedAR.Networking
         private bool _didSubscribeToNativeEvents;
         private PeerID _selfPeerId = PeerID.InvalidID;
         private INetworkingApi _nativeApi;
-        private IntPtr _nativeHandle;
+        internal IntPtr _nativeHandle;
 
         #region Handles
 
