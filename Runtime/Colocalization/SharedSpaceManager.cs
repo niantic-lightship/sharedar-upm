@@ -2,7 +2,8 @@
 
 using System;
 using System.Collections;
-using Niantic.Lightship.AR.Subsystems;
+using Niantic.Lightship.AR.LocationAR;
+using Niantic.Lightship.AR.PersistentAnchors;
 using Niantic.Lightship.AR.Utilities;
 using UnityEngine;
 using Niantic.Lightship.SharedAR.Rooms;
@@ -59,38 +60,12 @@ namespace Niantic.Lightship.SharedAR.Colocalization
         [Tooltip("Fill this field if there's an existing location manager in the scene. Otherwise, this component will make one itself.")]
         private ARLocationManager _arLocationManager;
 
-        // needed for Image tracking colocalization
-        [Obsolete]
-        [SerializeField]
-        private Texture2D _targetImage;
-
-        [Obsolete]
-        [SerializeField]
-        private float _targetImageSize;
-
         private GameObject _arLocationObject;
         private ARLocation _arLocation;
         private bool _usingCustomArLocationManager;
 
         private ImageTargetColocalization _imageTargetColocalization;
         private bool _imageTrackingColocalizedOnce = false;
-
-        /// <summary>
-        /// Access IRoom assigned to colocalization session
-        /// </summary>
-        [Obsolete]
-        [PublicAPI]
-        public IRoom _room { get; private set; }
-
-        /// <summary>
-        /// Reference to the GameObject representing shared origin/root
-        /// </summary>
-        [Obsolete]
-        [PublicAPI]
-        public GameObject _sharedArOriginObject
-        {
-            get { return SharedArOriginObject;}
-        }
 
         /// <summary>
         /// Reference to the GameObject representing shared origin/root
@@ -342,107 +317,6 @@ namespace Niantic.Lightship.SharedAR.Colocalization
             if (lightshipRoomOptions != null)
             {
                 lightshipRoomOptions.PrepareRoom();
-            }
-        }
-
-        /// <summary>
-        /// Start tracking using selected colocalization method
-        /// </summary>
-        /// <param name="target">A text string to identify target. For VPS colocalization, this should be AR
-        /// Location payload. This parameter is ignored in ImageTrackingColocalization and MockColocalization</param>
-        [Obsolete]
-        [PublicAPI]
-        public void StartTracking(string target)
-        {
-            switch (_colocalizationType)
-            {
-                case ColocalizationType.VpsColocalization:
-                {
-                    if (_arLocationManager && _arLocation)
-                    {
-                        _arLocation.Payload = new ARPersistentAnchorPayload(target);
-                        _arLocationManager.SetARLocations(_arLocation);
-                        _arLocationManager.StartTracking();
-                    }
-                    // Create the shared root under XR Origin but will reparent later
-                    MakeOriginAndAdd<SharedAROrigin>(gameObject.transform);
-                    break;
-                }
-                case ColocalizationType.ImageTrackingColocalization:
-                {
-                    // Add image tracking
-                    var arImageTrackedManager = gameObject.AddComponent<ARTrackedImageManager>();
-                    arImageTrackedManager.requestedMaxNumberOfMovingImages = 1;
-                    arImageTrackedManager.enabled = false;
-                    // TODO: Refactor RuntimeImageLibrary to simplify code here
-                    var imageLib = gameObject.AddComponent<RuntimeImageLibrary>();
-                    imageLib._imageTracker = arImageTrackedManager;
-                    imageLib._images = new RuntimeImageLibrary.ImageAndWidth[1];
-                    imageLib._images[0] = new RuntimeImageLibrary.ImageAndWidth();
-                    imageLib._images[0].textureInRBG24 = _targetImage;
-                    imageLib._images[0].widthInMeters = _targetImageSize;
-
-                    // Add ImageTrackingSharedAROrigin to the sharedOrigin object
-                    var sharedOrigin = MakeOriginAndAdd<ImageTrackingSharedAROrigin>(gameObject.transform);
-                    _imageTargetColocalization = new ImageTargetColocalization(arImageTrackedManager, imageLib);
-                    sharedOrigin._colocalizer = _imageTargetColocalization;
-                    _imageTargetColocalization.ColocalizationStateUpdated += OnImageTrackingColocalizationStateUpdated;
-                    break;
-                }
-                case ColocalizationType.MockColocalization:
-                {
-                    MakeOriginAndAdd<SharedAROrigin>(gameObject.transform);
-                    // Immediately invoke tracking event
-                    var args = new SharedSpaceManagerStateChangeEventArgs();
-                    args.Tracking = true;
-                    sharedSpaceManagerStateChanged?.Invoke(args);
-                    break;
-                }
-                default:
-                {
-                    Debug.Log("Unknown colocalization type selected. unable to localize");
-                    break;
-                }
-            }
-        }
-
-        /// <summary>
-        /// Prepare a network "Room" to join
-        /// </summary>
-        /// <param name="roomName">Room name. First try to find a room with this name. If not found,
-        /// make a new room</param>
-        /// <param name="capacity">Capacity of the room (between 2-32). Actual number of max peers can connect and sync
-        /// reliably depends on amount of data to sync and network environment. Only used when creating a new room.
-        /// </param>
-        /// <param name="description">Description of the room. Only used when creating a new room.</param>
-        [Obsolete]
-        [PublicAPI]
-        public void PrepareRoom(string roomName, int capacity, string description)
-        {
-            var roomParams = new RoomParams(
-                capacity,
-                roomName,
-                description
-            );
-            var status = RoomManagementService.GetOrCreateRoomForName(roomParams, out var room);
-            if (status == RoomManagementServiceStatus.Ok)
-            {
-                // get LightshipNetcodeTransport
-                if(NetworkManager.Singleton.NetworkConfig.NetworkTransport is LightshipNetcodeTransport lightshipTransport)
-                {
-                    lightshipTransport.SetRoom(room);
-                }
-                else
-                {
-                    Debug.LogError("Can only use ColocalizationManager with a LightshipNetcodeTransport");
-                }
-
-                // Set a Room to Netcode
-                _room = room;
-            }
-            else
-            {
-                Debug.Log($"Could not get or create a room for the wayspot {status}");
             }
         }
 

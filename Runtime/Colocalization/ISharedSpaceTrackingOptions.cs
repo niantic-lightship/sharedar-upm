@@ -1,7 +1,7 @@
 // Copyright 2023 Niantic, Inc. All Rights Reserved.
 
+using Niantic.Lightship.AR.LocationAR;
 using UnityEngine;
-using Niantic.Lightship.AR.Subsystems;
 using Niantic.Lightship.AR.Utilities;
 
 namespace Niantic.Lightship.SharedAR.Colocalization

@@ -1,4 +1,4 @@
-// Copyright 2022 Niantic, Inc. All Rights Reserved.
+// Copyright 2023 Niantic, Inc. All Rights Reserved.
 
 using Niantic.Lightship.AR.Utilities;
 
@@ -84,7 +84,14 @@ namespace Niantic.Lightship.SharedAR.Rooms
         {
         }
 
-        internal RoomParams
+        /// <summary>
+        /// Constructor for construction through ID. Typically used in conjunction with
+        /// Room.GetOrCreateRoomAsync which returns the necessary string ID.
+        /// </summary>
+        /// <param name="id">The specific RoomID GUID from the backend</param>
+        /// <param name="visibility">Visibility of the room</param>
+        [PublicAPI]
+        public RoomParams
         (
             string id,
             RoomVisibility visibility = RoomVisibility.Public

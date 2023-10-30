@@ -1,4 +1,4 @@
-// Copyright 2022 Niantic, Inc. All Rights Reserved.
+// Copyright 2023 Niantic, Inc. All Rights Reserved.
 
 #pragma warning disable 0067
 
@@ -8,6 +8,7 @@ using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using UnityEngine;
 using Niantic.Lightship.AR;
+using Niantic.Lightship.AR.Core;
 using Niantic.Lightship.SharedAR.Networking.API;
 
 namespace Niantic.Lightship.SharedAR.Networking
@@ -87,7 +88,8 @@ namespace Niantic.Lightship.SharedAR.Networking
             LightshipUnityContext.OnDeinitialized += HandleArdkDeinitialized;
             _nativeApi = api;
             _nativeHandle = _nativeApi.Init(serverAddr, roomId);
-            if (!IsNativeHandleValid()) {
+            if (!IsNativeHandleValid())
+            {
                 return;
             }
             GC.AddMemoryPressure(GCPressure);
@@ -240,12 +242,12 @@ namespace Niantic.Lightship.SharedAR.Networking
             // Invoke ArdkShutdown event when ARDK is deinitializing, so that user of Networking can dispose
             // Networking resources
             LightshipUnityContext.OnDeinitialized -= HandleArdkDeinitialized;
-            var args = new NetworkEventArgs(NetworkEvents.ArdkShutdown);
+            var args = new NetworkEventArgs(NetworkEvents.ArdkShutdown, 0);
             NetworkEvent?.Invoke(args);
         }
 
         [MonoPInvokeCallback(typeof(INetworkingApi.NetworkEventCallback))]
-        private static void _networkEventReceivedNative(IntPtr managedHandle, byte networkEvent)
+        private static void _networkEventReceivedNative(IntPtr managedHandle, byte networkEvent, UInt32 errorCode)
         {
             var instance = GCHandle.FromIntPtr(managedHandle).Target as LightshipNetworking;
 
@@ -255,7 +257,7 @@ namespace Niantic.Lightship.SharedAR.Networking
             var handler = instance.NetworkEvent;
             if (handler != null)
             {
-                var args = new NetworkEventArgs((NetworkEvents)networkEvent);
+                var args = new NetworkEventArgs((NetworkEvents)networkEvent, errorCode);
                 handler(args);
             }
         }

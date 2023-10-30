@@ -1,4 +1,4 @@
-// Copyright 2022 Niantic, Inc. All Rights Reserved.
+// Copyright 2023 Niantic, Inc. All Rights Reserved.
 
 #pragma warning disable 0067
 
@@ -12,7 +12,8 @@ namespace Niantic.Lightship.SharedAR.Networking.API
         delegate void NetworkEventCallback
         (
             IntPtr managedHandle,
-            byte connectionEvent
+            byte connectionEvent,
+            UInt32 errorCode
         );
 
         delegate void PeerAddedOrRemovedCallback

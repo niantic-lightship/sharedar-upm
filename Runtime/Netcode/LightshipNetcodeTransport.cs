@@ -35,7 +35,9 @@ namespace Niantic.Lightship.SharedAR.Netcode
         private System.Diagnostics.Stopwatch _networkWatch = new System.Diagnostics.Stopwatch();
 
         private ulong _serverClient;
+        private bool _serverClientHasValidId;
         private bool _isHost = false;
+        private Dictionary<uint, bool> _clientPeers;
 
         private const uint kNetcodeDataTag = 1;
         private const uint kClientAnnouncementTag = 2;
@@ -45,6 +47,8 @@ namespace Niantic.Lightship.SharedAR.Netcode
         private const ushort kMaxDataSize = 1500;
 
         private NetcodeSessionStats _statsCache;
+
+        private uint _lastNetworkError;
 
         /// <summary>
         /// Session stats describing network usage.
@@ -269,6 +273,8 @@ namespace Niantic.Lightship.SharedAR.Netcode
         {
             _isHost = true;
 
+            _clientPeers = new Dictionary<uint, bool>();
+
             PrepareNetworkSession();
             if (_networking == null) {
                 Debug.LogWarning("Preparing network session failed.");
@@ -367,6 +373,8 @@ namespace Niantic.Lightship.SharedAR.Netcode
         [PublicAPI]
         public override void Initialize(NetworkManager manager)
         {
+            _serverClientHasValidId = false;
+            _lastNetworkError = 0;
         }
 
         private void SetupServer()
@@ -378,6 +386,7 @@ namespace Niantic.Lightship.SharedAR.Netcode
             }
 
             _serverClient = _networking.SelfPeerID.ToUint32();
+            _serverClientHasValidId = true;
         }
 
         private void SetupClient()
@@ -433,31 +442,43 @@ namespace Niantic.Lightship.SharedAR.Netcode
                     new ArraySegment<byte>(),
                     GetTimeMS()
                 );
+                _lastNetworkError = args.errorCode;
             }
         }
 
         private void OnPeerRemoved(PeerIDArgs args)
         {
+            var leftPeerId = args.PeerID.ToUint32();
             // Host receives all peer removed event
             // Client receives host peer removed event only
-            if (_isHost || args.PeerID.ToUint32() == _serverClient)
+            if (_isHost || leftPeerId == _serverClient)
             {
-                var idAsUlong = args.PeerID.ToUint32();
                 QueueNetworkEvent
                 (
                     NetworkEvent.Disconnect,
-                    idAsUlong,
+                    leftPeerId,
                     new ArraySegment<byte>(),
                     GetTimeMS()
                 );
+            }
+
+            // host maintains the client map
+            if (_isHost)
+            {
+                if (_clientPeers != null)
+                {
+                    _clientPeers.Remove(leftPeerId);
+                }
             }
         }
 
         private void OnPeerAdded(PeerIDArgs args)
         {
-            // Netcode peer added notifcations are sent when
-            // the client / host handshake completes rather than
-            // the Room's OnPeerAdded event.
+            // Send client announcement if no server peerID set yet
+            if (!_isHost && !_serverClientHasValidId)
+            {
+                _networking.SendData(_networking.PeerIDs, kClientAnnouncementTag, _emptyMessage);
+            }
         }
 
         private void OnPeerDataReceived(DataReceivedArgs args)
@@ -482,6 +503,21 @@ namespace Niantic.Lightship.SharedAR.Netcode
             {
                 if (_isHost)
                 {
+                    // Check if already processed for this client
+                    if (_clientPeers == null)
+                    {
+                        _clientPeers = new Dictionary<uint, bool>();
+                    }
+                    var sender = args.PeerID.ToUint32();
+                    if (_clientPeers.ContainsKey(sender))
+                    {
+                        if (_clientPeers[sender])
+                        {
+                            // Already processed this client's announcement msg. Ignore.
+                            return;
+                        }
+                    }
+                    // process adding a client
                     QueueNetworkEvent(NetworkEvent.Connect,
                         args.PeerID.ToUint32(),
                         new ArraySegment<byte>(),
@@ -490,12 +526,14 @@ namespace Niantic.Lightship.SharedAR.Netcode
                         new List<PeerID>() { args.PeerID },
                         kServerAckTag,
                         _emptyMessage);
+                    _clientPeers.Add(sender, true);
                 }
             }
             else if (args.Tag == kServerAckTag)
             {
                 var idAsUlong = args.PeerID.ToUint32();
                 _serverClient = idAsUlong;
+                _serverClientHasValidId = true;
                 QueueNetworkEvent(
                     NetworkEvent.Connect,
                     _networking.SelfPeerID.ToUint32(),
@@ -517,6 +555,17 @@ namespace Niantic.Lightship.SharedAR.Netcode
         public override ulong ServerClientId
         {
             get { return NetworkManager.ServerClientId; }
+        }
+
+        /// <summary>
+        /// Get error code from the last network error. If no error, returns 0. Error codes are defined as const in
+        /// Niantic.Lightship.SharedAR.Networking.NetworkEventErrorCode
+        /// </summary>
+        /// <returns>Error code</returns>
+        [PublicAPI]
+        public uint GetLastNetworkError()
+        {
+            return _lastNetworkError;
         }
     }
 }

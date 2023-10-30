@@ -1,3 +1,4 @@
+// Copyright 2023 Niantic, Inc. All Rights Reserved.
 #if UNITY_EDITOR
 using System;
 using System.IO;
@@ -42,23 +43,12 @@ internal class SharedSpaceManagerEditor : Editor
 
     private void OnVpsGUI(SharedSpaceManager.ColocalizationType previousColocType)
     {
-        // Setup SharedArRootPrefab reference if necessary.
-        if (previousColocType != SharedSpaceManager.ColocalizationType.VpsColocalization)
-        {
-            var prefab = GetSharedArRootPrefab("SharedArRoot");
-            var prefabProperty = serializedObject.FindProperty("_sharedArRootPrefab");
-            prefabProperty.objectReferenceValue = prefab;
-        }
-
-        // GUI
         EditorGUILayout.PropertyField(serializedObject.FindProperty("_arLocationManager"),
             new GUIContent("AR Location Manager (optional)"));
     }
 
     private void OnImageTargetGUI()
     {
-        EditorGUILayout.PropertyField(serializedObject.FindProperty("_targetImage"));
-        EditorGUILayout.PropertyField(serializedObject.FindProperty("_targetImageSize"));
     }
 
     private void OnMockGUI()
@@ -67,6 +57,12 @@ internal class SharedSpaceManagerEditor : Editor
 
     public override void OnInspectorGUI()
     {
+        var prefabProperty = serializedObject.FindProperty("_sharedArRootPrefab");
+        if (prefabProperty.objectReferenceValue == null)
+        {
+            prefabProperty.objectReferenceValue = GetSharedArRootPrefab("SharedArRoot");
+        }
+
         EditorGUILayout.Space(10);
 
         var sharedSpaceManager = (SharedSpaceManager)target;

@@ -1,4 +1,4 @@
-// Copyright 2022 Niantic, Inc. All Rights Reserved.
+// Copyright 2023 Niantic, Inc. All Rights Reserved.
 
 using System;
 using System.Collections.Generic;
@@ -35,6 +35,16 @@ namespace Niantic.Lightship.SharedAR.Networking
     };
 
     /// <summary>
+    /// Error code in network event
+    /// </summary>
+    [PublicAPI]
+    public static class NetworkEventErrorCode
+    {
+        public const uint ServerInternalError = 4400;
+        public const uint RoomNotFoundError = 4401;
+        public const uint RoomFullError = 4402;
+    }
+    /// <summary>
     /// Event args fired from INetworking.NetworkEvent.
     /// </summary>
     [PublicAPI]
@@ -45,9 +55,15 @@ namespace Niantic.Lightship.SharedAR.Networking
         /// </summary>
         public NetworkEvents networkEvent { get; private set; }
 
-        public NetworkEventArgs(NetworkEvents netEvent)
+        /// <summary>
+        /// Error code. Only valid in Disconnected and ConnectionError
+        /// </summary>
+        public UInt32 errorCode { get; private set; }
+
+        public NetworkEventArgs(NetworkEvents netEvent, UInt32 errCode)
         {
             networkEvent = netEvent;
+            errorCode = errCode;
         }
     }
 

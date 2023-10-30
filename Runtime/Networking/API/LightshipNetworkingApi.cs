@@ -1,9 +1,10 @@
-// Copyright 2022 Niantic, Inc. All Rights Reserved.
+// Copyright 2023 Niantic, Inc. All Rights Reserved.
 
 using System;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using Niantic.Lightship.AR;
+using Niantic.Lightship.AR.Core;
 using UnityEngine;
 
 #pragma warning disable 0067

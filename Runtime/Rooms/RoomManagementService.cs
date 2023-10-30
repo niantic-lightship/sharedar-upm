@@ -2,12 +2,16 @@
 
 using System;
 using System.Collections.Generic;
+using System.Runtime.InteropServices;
+using System.Threading.Tasks;
 using Niantic.Lightship.SharedAR.Rooms.MarshMessages;
 using Niantic.Lightship.SharedAR.Rooms.Implementation;
 using UnityEngine;
 using Niantic.Lightship.AR;
+using Niantic.Lightship.AR.Core;
 using Niantic.Lightship.AR.Loader;
 using Niantic.Lightship.AR.Utilities;
+using AOT; // MonoPInvokeCallback attribute
 
 namespace Niantic.Lightship.SharedAR.Rooms
 {
@@ -22,6 +26,7 @@ namespace Niantic.Lightship.SharedAR.Rooms
         BadRequest = 400,
         Unauthorized = 401,
         NotFound = 404,
+        AsyncApiFailure = 460, // Unused http code. Developers should check != Ok over == AsyncApiFailure
     }
 
     /// <summary>
@@ -283,5 +288,119 @@ namespace Niantic.Lightship.SharedAR.Rooms
             outRoom =rooms[0];
             return status;
         }
+
+        public delegate void GetOrCreateRoomCallback(RoomManagementServiceStatus status, string room_id);
+
+        private static uint _cbCounter = 0;
+        private static Dictionary<uint, GetOrCreateRoomCallback> _getOrCreateRoomCbs = new();
+
+        [MonoPInvokeCallback(typeof(InternalGetOrCreateRoomCallback))]
+        private static void StaticGetOrCreateRoomCallback(UInt32 id, UInt32 status, string roomId)
+        {
+            RoomManagementServiceStatus translatedStatus = RoomManagementServiceStatus.AsyncApiFailure;
+            switch (status) {
+                case 0: // Failed
+                    translatedStatus = RoomManagementServiceStatus.AsyncApiFailure;
+                    break;
+                case 1: // Created
+                    translatedStatus = RoomManagementServiceStatus.Ok;
+                    break;
+                case 2: // Found
+                    translatedStatus = RoomManagementServiceStatus.Ok;
+                    break;
+
+            }
+            _getOrCreateRoomCbs[id].Invoke(translatedStatus, roomId);
+            _getOrCreateRoomCbs.Remove(id);
+        }
+
+        /// <summary>
+        /// An async implementation of the GetOrCreateRoom request. This function checks to see if
+        /// any rooms of the name "roomName" exist and if not, it creates the room. Once the
+        /// function has a valid RoomID from either of these operations, it returns it via the
+        /// "doneCb". The "doneCb" has two parameters. The first is a response code in case there
+        /// are service issues, and the second parameter is the room id that was found/created.
+        /// </summary>
+        /// <param name="roomName">Room name to check for</param>
+        /// <param name="roomDesc">Room description to use if a room needs to be made</param>
+        /// <param name="roomCapacity">Room capacity to use if a room needs to be made</param>
+        /// <param name="doneCb">Callback that the function calls after it errors or receives a
+        ///     valid room id.
+        /// </param>
+        [PublicAPI]
+        public static void GetOrCreateRoomAsync(string roomName, string roomDesc, uint roomCapacity, GetOrCreateRoomCallback doneCb)
+        {
+#if NIANTIC_LIGHTSHIP_AR_LOADER_ENABLED
+            if (LightshipUnityContext.UnityContextHandle == IntPtr.Zero)
+            {
+                Debug.LogWarning("Could not initialize networking. Lightship context is not initialized.");
+                return;
+            }
+            var callbackId = _cbCounter++;
+            _getOrCreateRoomCbs.Add(callbackId, doneCb);
+            _GetOrCreateRoom(LightshipUnityContext.UnityContextHandle, roomName, roomDesc, roomCapacity, callbackId, StaticGetOrCreateRoomCallback);
+#else
+            throw new PlatformNotSupportedException("Unsupported platform");
+#endif
+        }
+
+        /// <summary>
+        /// Struct which holds the return values for GetOrCreateRoomAsync.
+        /// </summary>
+        [PublicAPI]
+        public readonly struct GetOrCreateRoomAsyncTaskResult
+        {
+            public readonly RoomManagementServiceStatus Status;
+            public readonly string RoomId;
+
+            public GetOrCreateRoomAsyncTaskResult(
+                RoomManagementServiceStatus status,
+                string roomId)
+            {
+                Status = status;
+                RoomId = roomId;
+            }
+        }
+
+        /// <summary>
+        /// An async implementation of the GetOrCreateRoom request. This function checks to see if
+        /// any rooms of the name "roomName" exist and if not, it creates the room. This variant
+        /// returns a Task so it can be `await`-ed by C#'s `async/await` feature. The task is given
+        /// two results, the status of the request and, if successful, the roomId for the request.
+        /// </summary>
+        /// <param name="roomName">Room name to check for</param>
+        /// <param name="roomDesc">Room description to use if a room needs to be made</param>
+        /// <param name="roomCapacity">Room capacity to use if a room needs to be made</param>
+        /// <returns>Task with the request status and the roomId on successful requests</returns>
+        /// </param>
+        [PublicAPI]
+        public static Task<GetOrCreateRoomAsyncTaskResult> GetOrCreateRoomAsync(string roomName, string roomDescription, uint roomCapacity)
+        {
+#if NIANTIC_LIGHTSHIP_AR_LOADER_ENABLED
+            var tcs = new TaskCompletionSource<GetOrCreateRoomAsyncTaskResult>();
+            GetOrCreateRoomAsync(
+                roomName,
+                roomDescription,
+                roomCapacity,
+                (status, roomId) => {
+                    tcs.SetResult(new GetOrCreateRoomAsyncTaskResult(status, roomId));
+                });
+            return tcs.Task;
+#else
+            throw new PlatformNotSupportedException("Unsupported platform");
+#endif
+        }
+
+
+        private delegate void InternalGetOrCreateRoomCallback
+        (
+            UInt32 callbackId,
+            UInt32 status,
+            string roomId
+        );
+
+
+        [DllImport(LightshipPlugin.Name, EntryPoint = "Lightship_ARDK_Unity_Sharc_Room_GetOrCreateAsync")]
+        private static extern void _GetOrCreateRoom(IntPtr unityContextHandle, string roomName, string roomDescription, uint capacity, uint callbackId, InternalGetOrCreateRoomCallback callback);
     }
 }
