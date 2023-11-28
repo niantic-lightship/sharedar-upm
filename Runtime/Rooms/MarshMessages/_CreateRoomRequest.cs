@@ -1,4 +1,4 @@
-// Copyright 2023 Niantic, Inc. All Rights Reserved.
+// Copyright 2022-2023 Niantic.
 
 using System;
 
@@ -23,6 +23,7 @@ namespace Niantic.Lightship.SharedAR.Rooms.MarshMessages
         public Int32 capacity;
         public Int32 reconnectTimeoutSeconds;
         public string passcode;
+        public string region;
 
         #endregion
     }

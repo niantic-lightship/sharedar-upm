@@ -1,4 +1,4 @@
-// Copyright 2023 Niantic, Inc. All Rights Reserved.
+// Copyright 2022-2023 Niantic.
 
 using System;
 using System.Text;
@@ -6,6 +6,8 @@ using System.Threading;
 using Niantic.Lightship.SharedAR.Rooms.MarshMessages;
 using UnityEngine;
 using UnityEngine.Networking;
+using System.Threading.Tasks;
+using Niantic.Lightship.AR.VpsCoverage;
 
 namespace Niantic.Lightship.SharedAR.Rooms.Implementation
 {
@@ -112,6 +114,55 @@ namespace Niantic.Lightship.SharedAR.Rooms.Implementation
             _appId = null;
         }
 
+        // Async version of CreateRoomA
+        public async Task<_IRoomManagementServiceImpl._AsyncCreateRoomResponse> CreateRoomAsync(
+            _CreateRoomRequest request
+        )
+        {
+            var json = JsonUtility.ToJson(request);
+            var uri = String.Format(_createFormat, _endpoint);
+
+            // send a http request
+            var httpResponse = await SendWebRequestAsync(uri, json);
+
+            var response  = new _IRoomManagementServiceImpl._AsyncCreateRoomResponse();
+            response.Status = (RoomManagementServiceStatus)httpResponse.status;
+            if (String.IsNullOrEmpty(httpResponse.responseData))
+            {
+                return response;
+            }
+
+            var res = JsonUtility.FromJson<_CreateRoomResponse>(httpResponse.responseData);
+            response.CreateRoomResponse = res;
+
+            return response;
+
+        }
+
+        // Async version of GetRoomsForExperience
+        public async Task<_IRoomManagementServiceImpl._Async_GetRoomForExperienceResponse> GetRoomsForExperienceAsync
+        (
+            _GetRoomForExperienceRequest request
+        )
+        {
+            var json = JsonUtility.ToJson(request);
+            var uri = String.Format(_getRoomsForExperienceFormat, _endpoint);
+
+            // send a http request
+            var httpResponse = await SendWebRequestAsync(uri, json);
+
+            var response  = new _IRoomManagementServiceImpl._Async_GetRoomForExperienceResponse();
+            response.Status = (RoomManagementServiceStatus)httpResponse.status;
+            if (String.IsNullOrEmpty(httpResponse.responseData))
+            {
+                return response;
+            }
+
+            var res = JsonUtility.FromJson<_GetRoomForExperienceResponse>(httpResponse.responseData);
+            response.GetRoomForExperienceResponse = res;
+            return response;
+        }
+
         private string SendBlockingWebRequest(string uri, string body, out int status)
         {
             if (String.IsNullOrEmpty(_apiKey))
@@ -143,6 +194,52 @@ namespace Niantic.Lightship.SharedAR.Rooms.Implementation
                     status = (int)webRequest.responseCode;
 
                 return null;
+            }
+        }
+
+        // Async Web request
+        private struct AsyncRequestResponse
+        {
+            public string responseData;
+            public int status;
+        }
+        private async Task<AsyncRequestResponse> SendWebRequestAsync(string uri, string body)
+        {
+            if (String.IsNullOrEmpty(_apiKey))
+            {
+                return new AsyncRequestResponse()
+                {
+                    responseData = "",
+                    status = (int)RoomManagementServiceStatus.Unauthorized
+                };
+            }
+            using (UnityWebRequest webRequest = new UnityWebRequest(uri, "POST"))
+            {
+                byte[] data = Encoding.UTF8.GetBytes(body);
+                webRequest.uploadHandler = new UploadHandlerRaw(data);
+                webRequest.uploadHandler.contentType = "application/json";
+                webRequest.downloadHandler = new DownloadHandlerBuffer();
+                webRequest.SetRequestHeader(_apiKeyHeader, _apiKey);
+
+                await webRequest.SendWebRequest();
+
+                if (webRequest.result == UnityWebRequest.Result.Success)
+                {
+                    return new AsyncRequestResponse()
+                    {
+                        responseData = webRequest.downloadHandler.text,
+                        status = (int)webRequest.responseCode
+                    };
+                }
+                else
+                {
+                    return new AsyncRequestResponse()
+                    {
+                        responseData = "",
+                        status = (int)webRequest.responseCode
+                    };
+
+                }
             }
         }
     }

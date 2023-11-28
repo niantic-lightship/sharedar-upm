@@ -1,9 +1,10 @@
-// Copyright 2023 Niantic, Inc. All Rights Reserved.
+// Copyright 2022-2023 Niantic.
 
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using Niantic.Lightship.SharedAR.Rooms.MarshMessages;
+using System.Threading.Tasks;
 
 namespace Niantic.Lightship.SharedAR.Rooms.Implementation
 {
@@ -100,5 +101,23 @@ namespace Niantic.Lightship.SharedAR.Rooms.Implementation
             _rooms.Clear();
             ;
         }
+
+        public  Task<_IRoomManagementServiceImpl._AsyncCreateRoomResponse> CreateRoomAsync(
+            _CreateRoomRequest request
+        )
+        {
+            var tcs = new TaskCompletionSource<_IRoomManagementServiceImpl._AsyncCreateRoomResponse>();
+            return tcs.Task;
+        }
+
+        public Task<_IRoomManagementServiceImpl._Async_GetRoomForExperienceResponse> GetRoomsForExperienceAsync
+        (
+            _GetRoomForExperienceRequest request
+        )
+        {
+            var tcs = new TaskCompletionSource<_IRoomManagementServiceImpl._Async_GetRoomForExperienceResponse>();
+            return tcs.Task;
+        }
+
     }
 }

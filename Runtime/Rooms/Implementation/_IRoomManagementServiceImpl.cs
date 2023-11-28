@@ -1,5 +1,6 @@
-// Copyright 2023 Niantic, Inc. All Rights Reserved.
+// Copyright 2022-2023 Niantic.
 
+using System.Threading.Tasks;
 using Niantic.Lightship.SharedAR.Rooms.MarshMessages;
 
 namespace Niantic.Lightship.SharedAR.Rooms
@@ -25,6 +26,24 @@ namespace Niantic.Lightship.SharedAR.Rooms
 
         // No return type now, rely on status code
         public void DestroyRoom(_DestroyRoomRequest request, out RoomManagementServiceStatus status);
+
+        // Async create room
+        internal struct _AsyncCreateRoomResponse
+        {
+            public _CreateRoomResponse CreateRoomResponse;
+            public RoomManagementServiceStatus Status;
+        }
+        public Task<_AsyncCreateRoomResponse> CreateRoomAsync(_CreateRoomRequest request);
+
+        internal struct _Async_GetRoomForExperienceResponse
+        {
+            public _GetRoomForExperienceResponse GetRoomForExperienceResponse;
+            public RoomManagementServiceStatus Status;
+        }
+        public Task<_Async_GetRoomForExperienceResponse> GetRoomsForExperienceAsync
+        (
+            _GetRoomForExperienceRequest request
+        );
 
         // Release a held service
         public void ReleaseService();

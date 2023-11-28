@@ -1,4 +1,4 @@
-// Copyright 2023 Niantic, Inc. All Rights Reserved.
+// Copyright 2022-2023 Niantic.
 #if UNITY_EDITOR
 using System;
 using System.IO;
@@ -14,7 +14,7 @@ internal class SharedSpaceManagerEditor : Editor
         // Get this script's path
         var scriptGuids = AssetDatabase.FindAssets($"{nameof(SharedSpaceManagerEditor)} t:Script");
         var scriptPath = AssetDatabase.GUIDToAssetPath(scriptGuids[0]);
-        var directories = scriptPath.Split(new char[] { Path.DirectorySeparatorChar });
+        var directories = scriptPath.Split(new char[] { '/' });
         var editorIndex = Array.IndexOf(directories, "Editor");
 
         if (editorIndex < 0)

@@ -1,10 +1,10 @@
-// Copyright 2023 Niantic, Inc. All Rights Reserved.
+// Copyright 2022-2023 Niantic.
 
 using System;
-using System.Collections.Generic;
 using System.Runtime.InteropServices;
-using Niantic.Lightship.AR;
+using Niantic.Lightship.AR.Utilities.Log;
 using Niantic.Lightship.AR.Core;
+using Niantic.Lightship.AR.Loader;
 using UnityEngine;
 
 #pragma warning disable 0067
@@ -13,16 +13,29 @@ namespace Niantic.Lightship.SharedAR.Networking.API
 {
     internal class LightshipNetworkingApi : INetworkingApi
     {
-        public IntPtr Init(string serverAddr, string roomId)
+        public IntPtr Init(string serverAddr, string roomId, string endpointPrefix)
         {
 #if NIANTIC_LIGHTSHIP_AR_LOADER_ENABLED
-            Debug.Log("Attempting to initialize networking in CAPI");
             if (LightshipUnityContext.UnityContextHandle == IntPtr.Zero)
             {
-                Debug.LogWarning("Could not initialize networking. Lightship context is not initialized.");
+                Log.Warning("Could not initialize networking. Lightship context is not initialized.");
                 return IntPtr.Zero;
             }
-            return _InitRoom(LightshipUnityContext.UnityContextHandle, roomId);
+            var endpointPrefixToNative = endpointPrefix;
+            if (String.IsNullOrEmpty(endpointPrefixToNative))
+            {
+                // if empty, set the default prefix from config
+                var marshEndpointSplit = LightshipSettings.Instance.SharedArEndpoint.Split('.');
+                if (marshEndpointSplit.Length > 0)
+                {
+                    endpointPrefixToNative = marshEndpointSplit[0];
+                }
+                else
+                {
+                    Log.Debug("Server prefix is empty and default server address is likely malformed");
+                }
+            }
+            return _InitRoom(LightshipUnityContext.UnityContextHandle, roomId, endpointPrefixToNative);
 #else
         throw new PlatformNotSupportedException("Unsupported platform");
 #endif
@@ -101,7 +114,6 @@ namespace Niantic.Lightship.SharedAR.Networking.API
             (IntPtr managedHandle, IntPtr nativeHandle, INetworkingApi.NetworkEventCallback cb)
         {
 #if NIANTIC_LIGHTSHIP_AR_LOADER_ENABLED
-            UnityEngine.Debug.Log("Setting network event cb in CAPI");
             _SetConnectionEventCallback(managedHandle, nativeHandle, cb);
 #else
       throw new PlatformNotSupportedException("Unsupported platform");
@@ -152,8 +164,8 @@ namespace Niantic.Lightship.SharedAR.Networking.API
 
 #if NIANTIC_LIGHTSHIP_AR_LOADER_ENABLED
 
-        [DllImport(LightshipPlugin.Name, EntryPoint = "Lightship_ARDK_Unity_Sharc_Room_Init")]
-        private static extern IntPtr _InitRoom(IntPtr unityContextHandle, string roomId);
+        [DllImport(LightshipPlugin.Name, EntryPoint = "Lightship_ARDK_Unity_Sharc_Room_Init_With_Region")]
+        private static extern IntPtr _InitRoom(IntPtr unityContextHandle, string roomId, string endpointPrefix);
 
         [DllImport(LightshipPlugin.Name, EntryPoint = "Lightship_ARDK_Sharc_Room_Join")]
         private static extern void _Join(IntPtr nativeHandle);

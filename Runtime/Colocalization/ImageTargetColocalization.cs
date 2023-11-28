@@ -1,4 +1,4 @@
-// Copyright 2023 Niantic, Inc. All Rights Reserved.
+// Copyright 2022-2023 Niantic.
 using System;
 using System.Runtime.CompilerServices;
 using UnityEngine;
@@ -70,7 +70,6 @@ namespace Niantic.Lightship.SharedAR.Colocalization
 
         public void Start()
         {
-            Debug.Log("ImageTargetColocalization::Start()");
             if (_imageTrackingManager == null)
             {
                 return;
@@ -143,7 +142,6 @@ namespace Niantic.Lightship.SharedAR.Colocalization
                     if (_selfColocalizationState == ColocalizationState.Colocalizing)
                     {
                         _selfColocalizationState = ColocalizationState.Colocalized;
-                        Debug.Log($"Updating state to {_selfColocalizationState}");
                         InvokeStateUpdated(_selfColocalizationState);
                     }
                 }

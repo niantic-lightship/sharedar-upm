@@ -1,9 +1,10 @@
-// Copyright 2023 Niantic, Inc. All Rights Reserved.
+// Copyright 2022-2023 Niantic.
 
 using System;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using System.Threading.Tasks;
+using Niantic.Lightship.AR.Utilities.Log;
 using Niantic.Lightship.SharedAR.Rooms.MarshMessages;
 using Niantic.Lightship.SharedAR.Rooms.Implementation;
 using UnityEngine;
@@ -16,7 +17,7 @@ using AOT; // MonoPInvokeCallback attribute
 namespace Niantic.Lightship.SharedAR.Rooms
 {
     /// <summary>
-    /// Status of Room Management Service requests. Value corresponds to HTTP response code.
+    /// Status of Room Management Service requests. Values corresponds to HTTP response codes.
     /// </summary>
     [PublicAPI]
     public enum RoomManagementServiceStatus :
@@ -39,8 +40,7 @@ namespace Niantic.Lightship.SharedAR.Rooms
         private static _IRoomManagementServiceImpl _serviceImpl;
 
         // Prod Marsh REST endpoint
-        // TODO: Set this from config later, instead of hard coded here
-        private const string _marshEndPoint = "marsh-prod.nianticlabs.com:443";
+        private static string _marshEndPoint;
 
         // Default ExperienceID
         internal static string DefaultExperienceId { get; private set; }
@@ -50,14 +50,17 @@ namespace Niantic.Lightship.SharedAR.Rooms
             _serviceImpl = _HttpRoomManagementServiceImpl._Instance;
             var appId = Application.identifier;
             var apiKey = LightshipSettings.Instance.ApiKey;
+            _marshEndPoint = LightshipSettings.Instance.SharedArEndpoint;
             _serviceImpl.InitializeService(_marshEndPoint, appId, apiKey);
         }
 
-        internal static void _InitializeServiceForIntegrationTesting(string apiKey)
+        internal static void _InitializeServiceForIntegrationTesting(string apiKey, string marshEndpoint)
         {
             _serviceImpl = _HttpRoomManagementServiceImpl._Instance;
             var appId = Application.identifier;
+            _marshEndPoint = marshEndpoint;
             _serviceImpl.InitializeService(_marshEndPoint, appId, apiKey);
+            DefaultExperienceId = "";
         }
 
         internal static void _InitializeServiceForTesting()
@@ -84,7 +87,7 @@ namespace Niantic.Lightship.SharedAR.Rooms
             outRoom = null;
             if (_serviceImpl == null)
             {
-                Debug.LogError("Must initialize RoomManagementService before using");
+                Log.Error("Must initialize RoomManagementService before using");
                 return RoomManagementServiceStatus.BadRequest;
             }
 
@@ -94,13 +97,14 @@ namespace Niantic.Lightship.SharedAR.Rooms
                 name = roomParams.Name,
                 description = roomParams.Description,
                 capacity = roomParams.Capacity,
-                passcode = roomParams.Visibility == RoomVisibility.Private ? roomParams.Passcode : ""
+                passcode = roomParams.Visibility == RoomVisibility.Private ? roomParams.Passcode : "",
+                region = "AUTO",
             };
 
             var response = _serviceImpl.CreateRoom(request, out var status);
             if (status != RoomManagementServiceStatus.Ok)
             {
-                Debug.LogWarning($"Room Management Create request failed with status {status}");
+                Log.Warning($"Room Management Create request failed with status {status}");
                 return status;
             }
 
@@ -114,7 +118,7 @@ namespace Niantic.Lightship.SharedAR.Rooms
             rooms = new List<IRoom>();
             if (_serviceImpl == null)
             {
-                Debug.LogError("Must initialize RoomManagementService before using");
+                Log.Error("Must initialize RoomManagementService before using");
                 return RoomManagementServiceStatus.BadRequest;
             }
 
@@ -133,7 +137,7 @@ namespace Niantic.Lightship.SharedAR.Rooms
             var response = _serviceImpl.GetRoomsForExperience(request, out var status);
             if (status != RoomManagementServiceStatus.Ok)
             {
-                Debug.LogWarning($"Room Management Get request failed with status {status}");
+                Log.Warning($"Room Management Get request failed with status {status}");
                 return status;
             }
 
@@ -161,7 +165,7 @@ namespace Niantic.Lightship.SharedAR.Rooms
         {
             if (_serviceImpl == null)
             {
-                Debug.LogError("Must initialize RoomManagementService before using");
+                Log.Error("Must initialize RoomManagementService before using");
                 return RoomManagementServiceStatus.BadRequest;
             }
 
@@ -170,8 +174,7 @@ namespace Niantic.Lightship.SharedAR.Rooms
             _serviceImpl.DestroyRoom(request, out var status);
             if (status != RoomManagementServiceStatus.Ok)
             {
-                Debug.LogWarning($"Room Management Destroy request failed with status {status}");
-                Debug.Log($"|{roomId}|");
+                Log.Warning($"Room Management Destroy request failed with status {status}. id={roomId}");
                 return status;
             }
 
@@ -190,7 +193,7 @@ namespace Niantic.Lightship.SharedAR.Rooms
             outRoom = null;
             if (_serviceImpl == null)
             {
-                Debug.LogError("Must initialize RoomManagementService before using");
+                Log.Error("Must initialize RoomManagementService before using");
                 return RoomManagementServiceStatus.BadRequest;
             }
 
@@ -199,7 +202,7 @@ namespace Niantic.Lightship.SharedAR.Rooms
             var response = _serviceImpl.GetRoom(request, out var status);
             if (status != RoomManagementServiceStatus.Ok)
             {
-                Debug.LogWarning($"Room Management Get request failed with status {status}");
+                Log.Warning($"Room Management Get request failed with status {status}");
                 return status;
             }
 
@@ -282,19 +285,22 @@ namespace Niantic.Lightship.SharedAR.Rooms
 
             if (rooms.Count > 1)
             {
-                Debug.Log($"num of rooms = {rooms.Count}, but use first room" );
+                // TODO: we might want to handle same name room found case in future
             }
             // Return the first room for now
             outRoom =rooms[0];
             return status;
         }
 
+        [Obsolete]
         public delegate void GetOrCreateRoomCallback(RoomManagementServiceStatus status, string room_id);
 
         private static uint _cbCounter = 0;
+        [Obsolete]
         private static Dictionary<uint, GetOrCreateRoomCallback> _getOrCreateRoomCbs = new();
 
         [MonoPInvokeCallback(typeof(InternalGetOrCreateRoomCallback))]
+        [Obsolete]
         private static void StaticGetOrCreateRoomCallback(UInt32 id, UInt32 status, string roomId)
         {
             RoomManagementServiceStatus translatedStatus = RoomManagementServiceStatus.AsyncApiFailure;
@@ -328,12 +334,13 @@ namespace Niantic.Lightship.SharedAR.Rooms
         ///     valid room id.
         /// </param>
         [PublicAPI]
+        [Obsolete]
         public static void GetOrCreateRoomAsync(string roomName, string roomDesc, uint roomCapacity, GetOrCreateRoomCallback doneCb)
         {
 #if NIANTIC_LIGHTSHIP_AR_LOADER_ENABLED
             if (LightshipUnityContext.UnityContextHandle == IntPtr.Zero)
             {
-                Debug.LogWarning("Could not initialize networking. Lightship context is not initialized.");
+                Log.Warning("Could not initialize networking. Lightship context is not initialized.");
                 return;
             }
             var callbackId = _cbCounter++;
@@ -351,14 +358,29 @@ namespace Niantic.Lightship.SharedAR.Rooms
         public readonly struct GetOrCreateRoomAsyncTaskResult
         {
             public readonly RoomManagementServiceStatus Status;
-            public readonly string RoomId;
+            [Obsolete]
+            public string RoomId
+            {
+                get
+                {
+                    if (Room == null)
+                    {
+                        return "";
+                    }
+                    else
+                    {
+                        return Room.RoomParams.RoomID;
+                    }
+                }
+            }
+            public readonly IRoom Room;
 
-            public GetOrCreateRoomAsyncTaskResult(
+            internal GetOrCreateRoomAsyncTaskResult(
                 RoomManagementServiceStatus status,
-                string roomId)
+                IRoom room)
             {
                 Status = status;
-                RoomId = roomId;
+                Room = room;
             }
         }
 
@@ -369,28 +391,76 @@ namespace Niantic.Lightship.SharedAR.Rooms
         /// two results, the status of the request and, if successful, the roomId for the request.
         /// </summary>
         /// <param name="roomName">Room name to check for</param>
-        /// <param name="roomDesc">Room description to use if a room needs to be made</param>
+        /// <param name="roomDescription">Room description to use if a room needs to be made</param>
         /// <param name="roomCapacity">Room capacity to use if a room needs to be made</param>
         /// <returns>Task with the request status and the roomId on successful requests</returns>
-        /// </param>
         [PublicAPI]
-        public static Task<GetOrCreateRoomAsyncTaskResult> GetOrCreateRoomAsync(string roomName, string roomDescription, uint roomCapacity)
+        public static async Task<GetOrCreateRoomAsyncTaskResult> GetOrCreateRoomAsync(
+            string roomName, string roomDescription, uint roomCapacity)
         {
 #if NIANTIC_LIGHTSHIP_AR_LOADER_ENABLED
-            var tcs = new TaskCompletionSource<GetOrCreateRoomAsyncTaskResult>();
-            GetOrCreateRoomAsync(
-                roomName,
-                roomDescription,
-                roomCapacity,
-                (status, roomId) => {
-                    tcs.SetResult(new GetOrCreateRoomAsyncTaskResult(status, roomId));
-                });
-            return tcs.Task;
+            if (_serviceImpl == null)
+            {
+                Log.Error("Must initialize RoomManagementService before using");
+                return new GetOrCreateRoomAsyncTaskResult(RoomManagementServiceStatus.BadRequest, null);
+            }
+
+            var request = new _GetRoomForExperienceRequest() { };
+            var resGetRooms = await _serviceImpl.GetRoomsForExperienceAsync(request);
+
+            var status = resGetRooms.Status;
+            if (status == RoomManagementServiceStatus.Ok)
+            {
+                var rooms = resGetRooms.GetRoomForExperienceResponse.rooms;
+                if (rooms.Count > 0)
+                {
+                    // found rooms
+                    foreach (var room in rooms)
+                    {
+                        if (room.name == roomName)
+                        {
+                            // found one
+                            return new GetOrCreateRoomAsyncTaskResult(
+                                status,
+                                new Room(room));
+                        }
+                    }
+                }
+            }
+
+            // If no room has been made with this app's DefaultExperienceId, the above request
+            // returns "NotFound" instead of "Ok". If a room has been made on the experience before,
+            // even if there's no rooms in the list, it returns "Ok".
+            if (status == RoomManagementServiceStatus.Ok ||
+                status == RoomManagementServiceStatus.NotFound)
+            {
+                // no room matching name criteria. create new one
+                var createRoomRequest = new _CreateRoomRequest()
+                {
+                    experienceId = "",
+                    name = roomName,
+                    description = roomDescription,
+                    capacity = (int)roomCapacity,
+                    passcode = "",
+                    region = "AUTO",
+                };
+                var resCreate = await _serviceImpl.CreateRoomAsync(createRoomRequest);
+                var createStatus = resCreate.Status;
+                if (createStatus == RoomManagementServiceStatus.Ok)
+                {
+                    return new GetOrCreateRoomAsyncTaskResult(
+                        createStatus,
+                        new Room(resCreate.CreateRoomResponse.room));
+                }
+                return new GetOrCreateRoomAsyncTaskResult(createStatus, null);
+            }
+            return new GetOrCreateRoomAsyncTaskResult(status, null);
 #else
             throw new PlatformNotSupportedException("Unsupported platform");
 #endif
         }
 
+        //
 
         private delegate void InternalGetOrCreateRoomCallback
         (

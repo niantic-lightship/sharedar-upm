@@ -1,4 +1,4 @@
-// Copyright 2023 Niantic, Inc. All Rights Reserved.
+// Copyright 2022-2023 Niantic.
 
 using System;
 using System.Collections.Generic;
@@ -25,6 +25,7 @@ namespace Niantic.Lightship.SharedAR.Rooms.MarshMessages
         public string name;
         public string description;
         public bool passcodeEnabled;
+        public string endpoint;
 
         #endregion
 
@@ -38,6 +39,7 @@ namespace Niantic.Lightship.SharedAR.Rooms.MarshMessages
                 Description = room.description,
                 Capacity = room.capacity,
                 Visibility = room.passcodeEnabled ? RoomVisibility.Private : RoomVisibility.Public,
+                Endpoint = room.endpoint,
             };
 
             return roomParams;

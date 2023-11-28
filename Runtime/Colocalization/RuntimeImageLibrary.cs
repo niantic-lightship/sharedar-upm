@@ -1,9 +1,9 @@
-// Copyright 2023 Niantic, Inc. All Rights Reserved.
-// Copyright 2023 Niantic Labs. All rights reserved.
+// Copyright 2022-2023 Niantic.
 
 using System;
 using UnityEngine;
 using UnityEngine.XR.ARFoundation;
+using Niantic.Lightship.AR.Utilities.Log;
 using UnityEngine.XR.ARSubsystems;
 
 namespace Niantic.Lightship.SharedAR.Colocalization
@@ -110,7 +110,6 @@ namespace Niantic.Lightship.SharedAR.Colocalization
             if (_previousStatus != AddReferenceImageJobStatus.Success &&
                 _imageJob.status == AddReferenceImageJobStatus.Success)
             {
-                Debug.Log("Target image loaded");
                 // Enable ARTrackedImageManager after image library is ready
                 _imageTracker.enabled = true;
                 enabled = false;
@@ -121,12 +120,12 @@ namespace Niantic.Lightship.SharedAR.Colocalization
             }
             else if (_imageJob.status == AddReferenceImageJobStatus.ErrorInvalidImage)
             {
-                Debug.LogError("RuntimeImageLibrary failed, ErrorInvalidImage");
+                Log.Error("RuntimeImageLibrary failed, ErrorInvalidImage");
                 enabled = false;
             }
             else if (_imageJob.status == AddReferenceImageJobStatus.ErrorUnknown)
             {
-                Debug.LogError("RuntimeImageLibrary failed, ErrorUnknown");
+                Log.Error("RuntimeImageLibrary failed, ErrorUnknown");
                 enabled = false;
             }
 

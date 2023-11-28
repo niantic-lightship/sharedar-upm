@@ -1,10 +1,12 @@
-// Copyright 2023 Niantic, Inc. All Rights Reserved.
+// Copyright 2022-2023 Niantic.
 
 using System.Collections.Generic;
+using Niantic.Lightship.AR.Utilities.Log;
 using Niantic.Lightship.SharedAR.Colocalization;
 using Niantic.Lightship.SharedAR.Networking;
 using Niantic.Lightship.SharedAR.Datastore;
 using UnityEngine;
+using Niantic.Lightship.AR.Utilities;
 
 namespace Niantic.Lightship.SharedAR.Rooms
 {
@@ -24,7 +26,7 @@ namespace Niantic.Lightship.SharedAR.Rooms
         {
             if (Networking == null)
             {
-                Networking = new LightshipNetworking("", RoomParams.RoomID);
+                Networking = new LightshipNetworking("", RoomParams.RoomID, RoomParams.Endpoint);
             }
 
             if (Datastore == null)
@@ -45,7 +47,7 @@ namespace Niantic.Lightship.SharedAR.Rooms
             }
             else
             {
-                Debug.LogWarning("Attempting to join network but network is not initialized");
+                Log.Warning("Attempting to join network but network is not initialized");
             }
         }
 

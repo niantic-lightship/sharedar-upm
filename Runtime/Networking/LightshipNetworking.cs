@@ -1,4 +1,4 @@
-// Copyright 2023 Niantic, Inc. All Rights Reserved.
+// Copyright 2022-2023 Niantic.
 
 #pragma warning disable 0067
 
@@ -7,6 +7,7 @@ using AOT; // MonoPInvokeCallback attribute
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using UnityEngine;
+using Niantic.Lightship.AR.Utilities.Log;
 using Niantic.Lightship.AR;
 using Niantic.Lightship.AR.Core;
 using Niantic.Lightship.SharedAR.Networking.API;
@@ -14,8 +15,8 @@ using Niantic.Lightship.SharedAR.Networking.API;
 namespace Niantic.Lightship.SharedAR.Networking
 {
     // @note This is an experimental feature. Experimental features should not be used in
-    // production products as they are subject to breaking changes, not officially supported, and
-    // may be deprecated without notice
+    // production products as they are subject to breaking changes, not officially supported,
+    // and may be deprecated without notice
     public class LightshipNetworking : INetworking
     {
         private bool _isDestroyed;
@@ -71,9 +72,9 @@ namespace Niantic.Lightship.SharedAR.Networking
         public LightshipNetworking
         (
             string serverAddr,
-            string roomId
-        ) : this(serverAddr, roomId,
-            new LightshipNetworkingApi()
+            string roomId,
+            string endpointPrefix = ""
+        ) : this(serverAddr, roomId, new LightshipNetworkingApi(), endpointPrefix
         )
         {
         }
@@ -82,12 +83,13 @@ namespace Niantic.Lightship.SharedAR.Networking
         (
             string serverAddr,
             string roomId,
-            INetworkingApi api
+            INetworkingApi api,
+            string endpointPrefix = ""
         )
         {
             LightshipUnityContext.OnDeinitialized += HandleArdkDeinitialized;
             _nativeApi = api;
-            _nativeHandle = _nativeApi.Init(serverAddr, roomId);
+            _nativeHandle = _nativeApi.Init(serverAddr, roomId, endpointPrefix);
             if (!IsNativeHandleValid())
             {
                 return;
@@ -101,7 +103,7 @@ namespace Niantic.Lightship.SharedAR.Networking
         {
             if (_nativeHandle == IntPtr.Zero)
             {
-                Debug.LogWarning("Invalid native handle");
+                Log.Warning("Invalid native handle");
                 return false;
             }
             return true;
@@ -289,7 +291,7 @@ namespace Niantic.Lightship.SharedAR.Networking
 
             if (instance == null || instance._isDestroyed)
             {
-                Debug.LogWarning("_didRemovePeerNative invoked after C# instance was destroyed.");
+                Log.Warning("_didRemovePeerNative invoked after C# instance was destroyed.");
                 return;
             }
 
@@ -317,7 +319,7 @@ namespace Niantic.Lightship.SharedAR.Networking
 
             if (instance == null || instance._isDestroyed)
             {
-                Debug.LogWarning("_dataReceivedNative called after C# instance was destroyed.");
+                Log.Warning("_dataReceivedNative called after C# instance was destroyed.");
                 return;
             }
 

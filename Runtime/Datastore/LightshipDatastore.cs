@@ -1,10 +1,11 @@
-// Copyright 2023 Niantic, Inc. All Rights Reserved.
+// Copyright 2022-2023 Niantic.
 
 using System;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using AOT; // MonoPInvokeCallback attribute
 using UnityEngine;
+using Niantic.Lightship.AR.Utilities.Log;
 using Niantic.Lightship.SharedAR.Datastore.Api;
 using Niantic.Lightship.AR.Utilities;
 
@@ -76,7 +77,7 @@ namespace Niantic.Lightship.SharedAR.Datastore
         {
             if (_nativeHandle == IntPtr.Zero || _api == null)
             {
-                Debug.LogWarning("Invalid native handle or native API");
+                Log.Warning("Invalid native handle or native API");
                 return false;
             }
             return true;

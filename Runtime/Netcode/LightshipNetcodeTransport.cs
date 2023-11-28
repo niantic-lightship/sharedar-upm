@@ -1,7 +1,8 @@
-// Copyright 2023 Niantic, Inc. All Rights Reserved.
+// Copyright 2022-2023 Niantic.
 
 using System;
 using System.Collections.Generic;
+using Niantic.Lightship.AR.Utilities.Log;
 using Niantic.Lightship.SharedAR.Networking;
 using Niantic.Lightship.SharedAR.Rooms;
 using Niantic.Lightship.AR.Utilities;
@@ -148,7 +149,7 @@ namespace Niantic.Lightship.SharedAR.Netcode
             Array.Copy(data.Array, 0, bytes, 0, data.Count);
             if (bytes.Length > kMaxDataSize)
             {
-                Debug.LogError("Trying to send some massive data");
+                Log.Error("Trying to send some massive data");
             }
 
             _networking.SendData(new List<PeerID>() { peer }, kNetcodeDataTag, bytes);
@@ -225,7 +226,7 @@ namespace Niantic.Lightship.SharedAR.Netcode
         {
             if (_room == null)
             {
-                Debug.LogWarning("Cannot start network session, as room is not set yet");
+                Log.Warning("Cannot start network session, as room is not set yet");
                 return;
             }
             _networkWatch.Start();
@@ -249,7 +250,7 @@ namespace Niantic.Lightship.SharedAR.Netcode
         {
             PrepareNetworkSession();
             if (_networking == null) {
-                Debug.LogWarning("Preparing network session failed.");
+                Log.Warning("Preparing network session failed.");
                 return false;
             }
 
@@ -277,7 +278,7 @@ namespace Niantic.Lightship.SharedAR.Netcode
 
             PrepareNetworkSession();
             if (_networking == null) {
-                Debug.LogWarning("Preparing network session failed.");
+                Log.Warning("Preparing network session failed.");
                 return false;
             }
 
@@ -309,7 +310,6 @@ namespace Niantic.Lightship.SharedAR.Netcode
             {
                 return;
             }
-            Debug.Log("Sending disconnect to remote " + clientId);
             _networking.SendData(
                 new List<PeerID>() { new PeerID((UInt32)clientId) },
                 kServerForceDisconnectTag,
@@ -381,7 +381,7 @@ namespace Niantic.Lightship.SharedAR.Netcode
         {
             if (_networking == null)
             {
-                Debug.LogError("Networking was null when setting up server");
+                Log.Error("Networking was null when setting up server");
                 return;
             }
 
@@ -393,7 +393,7 @@ namespace Niantic.Lightship.SharedAR.Netcode
         {
             if (_networking == null)
             {
-                Debug.LogError("Networking was null when setting up client");
+                Log.Error("Networking was null when setting up client");
                 return;
             }
 

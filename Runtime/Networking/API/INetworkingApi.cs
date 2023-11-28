@@ -1,4 +1,4 @@
-// Copyright 2023 Niantic, Inc. All Rights Reserved.
+// Copyright 2022-2023 Niantic.
 
 #pragma warning disable 0067
 
@@ -31,7 +31,7 @@ namespace Niantic.Lightship.SharedAR.Networking.API
             UInt64 rawDataSize
         );
 
-        IntPtr Init(string serverAddr, string roomId);
+        IntPtr Init(string serverAddr, string roomId, string endpointPrefix = "");
         void Join(IntPtr nativeHandle);
         void Leave(IntPtr nativeHandle);
         void Release(IntPtr nativeHandle);

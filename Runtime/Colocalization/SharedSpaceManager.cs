@@ -1,7 +1,8 @@
-// Copyright 2023 Niantic, Inc. All Rights Reserved.
+// Copyright 2022-2023 Niantic.
 
 using System;
 using System.Collections;
+using Niantic.Lightship.AR.Utilities.Log;
 using Niantic.Lightship.AR.LocationAR;
 using Niantic.Lightship.AR.PersistentAnchors;
 using Niantic.Lightship.AR.Utilities;
@@ -132,7 +133,7 @@ namespace Niantic.Lightship.SharedAR.Colocalization
                 }
                 default:
                 {
-                    Debug.Log("Unknown colocalization type selected. unable to init ColocalizationManager");
+                    Log.Info("Unknown colocalization type selected. unable to init ColocalizationManager");
                     break;
                 }
             }
@@ -159,7 +160,7 @@ namespace Niantic.Lightship.SharedAR.Colocalization
                 }
                 default:
                 {
-                    Debug.Log("Unknown colocalization type selected. unable to init ColocalizationManager");
+                    Log.Info("Unknown colocalization type selected. unable to init ColocalizationManager");
                     break;
                 }
             }
@@ -253,7 +254,7 @@ namespace Niantic.Lightship.SharedAR.Colocalization
                     }
                     else
                     {
-                        Debug.LogError("Colocalization type selected and trackingOptions type does not match." +
+                        Log.Error("Colocalization type selected and trackingOptions type does not match." +
                             "Both has to be vps tracking.");
                     }
                     break;
@@ -283,7 +284,7 @@ namespace Niantic.Lightship.SharedAR.Colocalization
                     }
                     else
                     {
-                        Debug.LogError("Colocalization type selected and trackingOptions type does not match." +
+                        Log.Error("Colocalization type selected and trackingOptions type does not match." +
                             "Both has to be image tracking.");
                     }
                     break;
@@ -301,14 +302,14 @@ namespace Niantic.Lightship.SharedAR.Colocalization
                     }
                     else
                     {
-                        Debug.LogError("Colocalization type selected and trackingOptions type does not match." +
+                        Log.Error("Colocalization type selected and trackingOptions type does not match." +
                             "Both has to be mock tracking.");
                     }
                     break;
                 }
                 default:
                 {
-                    Debug.Log("Unknown colocalization type selected. unable to localize");
+                    Log.Info("Unknown colocalization type selected. unable to localize");
                     break;
                 }
             }
@@ -361,7 +362,7 @@ namespace Niantic.Lightship.SharedAR.Colocalization
         {
             if (SharedArOriginObject != null)
             {
-                Debug.LogError("Shared origin already exists");
+                Log.Error("Shared origin already exists");
                 return null;
             }
 

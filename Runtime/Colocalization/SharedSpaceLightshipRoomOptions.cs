@@ -1,5 +1,6 @@
-// Copyright 2023 Niantic, Inc. All Rights Reserved.
+// Copyright 2022-2023 Niantic.
 
+using Niantic.Lightship.AR.Utilities.Log;
 using Niantic.Lightship.SharedAR.Rooms;
 using Niantic.Lightship.SharedAR.Netcode;
 using UnityEngine;
@@ -30,7 +31,7 @@ namespace Niantic.Lightship.SharedAR.Colocalization
             int capacity,
             string description,
             bool useNetcode
-        ) : this(roomTag + vpsTrackingArgsargs._arLocation.Payload, capacity, description, useNetcode)
+        ) : this(roomTag + vpsTrackingArgsargs._arLocation.Payload.ToBase64(), capacity, description, useNetcode)
         {
         }
 
@@ -55,13 +56,13 @@ namespace Niantic.Lightship.SharedAR.Colocalization
                     }
                     else
                     {
-                        Debug.LogError("Trying to set up Room but LightshipNetcodeTransport is not set to NetworkManager");
+                        Log.Error("Trying to set up Room but LightshipNetcodeTransport is not set to NetworkManager");
                     }
                 }
             }
             else
             {
-                Debug.Log($"Could not get or create a room for the wayspot {status}");
+                Log.Warning($"Could not get or create a room for the wayspot {status}");
             }
         }
     }

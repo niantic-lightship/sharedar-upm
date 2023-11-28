@@ -1,4 +1,5 @@
-// Copyright 2023 Niantic, Inc. All Rights Reserved.
+// Copyright 2022-2023 Niantic.
+using Niantic.Lightship.AR.Utilities.Log;
 using Niantic.Lightship.AR.Utilities;
 using UnityEngine;
 using Unity.Netcode;
@@ -32,7 +33,7 @@ namespace Niantic.Lightship.SharedAR.Netcode
                 {
                     var origin = FindObjectOfType<SharedAROrigin>();
                     if (origin == null)
-                        Debug.LogError("In order for the SharedARNetworkObject to be aligned, " +
+                        Log.Error("In order for the SharedARNetworkObject to be aligned, " +
                             "you need a SharedAROrigin in your scene under the XR Origin");
                     else
                     {

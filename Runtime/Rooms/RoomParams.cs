@@ -1,4 +1,4 @@
-// Copyright 2023 Niantic, Inc. All Rights Reserved.
+// Copyright 2022-2023 Niantic.
 
 using Niantic.Lightship.AR.Utilities;
 
@@ -64,6 +64,9 @@ namespace Niantic.Lightship.SharedAR.Rooms
         [PublicAPI]
         public string Passcode { internal get; set; }
 
+        // Endpoint prefix
+        internal string Endpoint {  get; set; }
+
         /// <summary>
         /// Constructor
         /// </summary>
@@ -107,7 +110,8 @@ namespace Niantic.Lightship.SharedAR.Rooms
             string experienceId = "",
             string description = "",
             string passcode = "",
-            RoomVisibility visibility = RoomVisibility.Public
+            RoomVisibility visibility = RoomVisibility.Public,
+            string endpoint = ""
         )
         {
             RoomID = id;
@@ -118,6 +122,7 @@ namespace Niantic.Lightship.SharedAR.Rooms
             Visibility = visibility;
             // Don't apply a passcode unless the room is private
             Passcode = Visibility == RoomVisibility.Private ? passcode : "";
+            Endpoint = endpoint;
         }
     }
 } // namespace Niantic.ARDK.SharedAR
