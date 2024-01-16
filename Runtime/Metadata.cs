@@ -1,9 +1,9 @@
-// Copyright 2022-2023 Niantic.
+// Copyright 2022-2024 Niantic.
 
 namespace Niantic.Lightship.SharedAR.Settings
 {
     public static class Metadata
     {
-        public const string SharedArVersion = "3.1.0-231127183852";
+        public const string SharedArVersion = "3.2.0-2401130645";
     }
 }

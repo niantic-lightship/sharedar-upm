@@ -1,4 +1,4 @@
-// Copyright 2022-2023 Niantic.
+// Copyright 2022-2024 Niantic.
 using Niantic.Lightship.AR.Utilities.Log;
 using Niantic.Lightship.AR.Utilities;
 using UnityEngine;
@@ -17,6 +17,7 @@ namespace Niantic.Lightship.SharedAR.Netcode
     [RequireComponent(typeof(NetworkObject))]
     public class LightshipNetworkObject : NetworkBehaviour
     {
+        [Tooltip("Whether to attempt to re-parent the object under the SharedAROrigin when spawned.")]
         [SerializeField]
         private bool _putInSharedOrigin = true;
 

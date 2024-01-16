@@ -1,4 +1,4 @@
-// Copyright 2022-2023 Niantic.
+// Copyright 2022-2024 Niantic.
 
 using System;
 using System.Collections.Generic;
@@ -57,6 +57,21 @@ namespace Niantic.Lightship.SharedAR.Rooms.Implementation
             return res;
         }
 
+        public _CreateRoomResponse GetOrCreateRoom(_CreateRoomRequest request, out RoomManagementServiceStatus status)
+        {
+            foreach (var room in _rooms)
+            {
+                if (request.name == room.Value.name)
+                {
+                    status = RoomManagementServiceStatus.Ok;
+                    return new _CreateRoomResponse() { room = room.Value };
+
+                }
+            }
+
+            return CreateRoom(request, out status);
+        }
+
         public _GetRoomResponse GetRoom(_GetRoomRequest request, out RoomManagementServiceStatus status)
         {
             if (!_rooms.ContainsKey(request.roomId))
@@ -75,10 +90,18 @@ namespace Niantic.Lightship.SharedAR.Rooms.Implementation
             out RoomManagementServiceStatus status
         )
         {
+            if (_rooms.Count == 0)
+            {
+                status = RoomManagementServiceStatus.NotFound;
+                return new _GetRoomForExperienceResponse() { };
+            }
             var roomList = new List<_RoomInternal>();
             foreach (var room in _rooms.Values)
             {
-                if (room.experienceId.Equals(request.experienceIds.First()))
+                if (request.experienceIds == null ||
+                    request.experienceIds.Count == 0 ||
+                    room.experienceId.Equals(request.experienceIds.First())
+                )
                 {
                     roomList.Add(room);
                 }
@@ -101,23 +124,40 @@ namespace Niantic.Lightship.SharedAR.Rooms.Implementation
             _rooms.Clear();
             ;
         }
-
-        public  Task<_IRoomManagementServiceImpl._AsyncCreateRoomResponse> CreateRoomAsync(
+#pragma warning disable CS1998 // suppress warning due to not calling await function in async funcs
+        public async Task<_IRoomManagementServiceImpl._AsyncCreateRoomResponse> CreateRoomAsync(
             _CreateRoomRequest request
         )
         {
-            var tcs = new TaskCompletionSource<_IRoomManagementServiceImpl._AsyncCreateRoomResponse>();
-            return tcs.Task;
+            var response = CreateRoom(request, out var status);
+            var res = new _IRoomManagementServiceImpl._AsyncCreateRoomResponse();
+            res.CreateRoomResponse = response;
+            res.Status = status;
+            return res;
         }
 
-        public Task<_IRoomManagementServiceImpl._Async_GetRoomForExperienceResponse> GetRoomsForExperienceAsync
+        public async Task<_IRoomManagementServiceImpl._Async_GetRoomForExperienceResponse> GetRoomsForExperienceAsync
         (
             _GetRoomForExperienceRequest request
         )
         {
-            var tcs = new TaskCompletionSource<_IRoomManagementServiceImpl._Async_GetRoomForExperienceResponse>();
-            return tcs.Task;
+            var response = GetRoomsForExperience(request, out var status);
+            var res = new _IRoomManagementServiceImpl._Async_GetRoomForExperienceResponse();
+            res.GetRoomForExperienceResponse = response;
+            res.Status = status;
+            return res;
         }
+
+        public async Task<_IRoomManagementServiceImpl._Async_CreateRoomResponse> GetOrCreateRoomAsync(_CreateRoomRequest request)
+        {
+            var response = GetOrCreateRoom(request, out var status);
+            var res = new _IRoomManagementServiceImpl._Async_CreateRoomResponse();
+            res.CreateRoomResponse = response;
+            res.Status = status;
+            return res;
+        }
+
+#pragma warning restore CS1998
 
     }
 }

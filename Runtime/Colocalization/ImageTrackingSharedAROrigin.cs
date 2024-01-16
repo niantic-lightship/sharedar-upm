@@ -1,4 +1,4 @@
-// Copyright 2022-2023 Niantic.
+// Copyright 2022-2024 Niantic.
 
 using UnityEngine;
 using UnityEngine.XR.ARFoundation;
@@ -37,14 +37,20 @@ namespace Niantic.Lightship.SharedAR.Colocalization
             if (_colocalizer.AlignedPoseToLocal(Matrix4x4.identity, out sharedOrigin) ==
                 ImageTargetColocalization.ColocalizationAlignmentResult.Success)
             {
-                transform.position = sharedOrigin.ToPosition();
+                // On Android and second time using image colocalization, somehow
+                // AlignedPoseToLocal() returns success but the matrix is zero. Skip if that case,
+                // or deep inside Matrix4x4.ToRotation() prints error on each frame
+                if (!sharedOrigin.Equals(Matrix4x4.zero))
+                {
+                    transform.position = sharedOrigin.ToPosition();
 
-                // Change the rotation of the anchor in global space to make it so the
-                // anchor's up-axis is facing Unity's up-axis
-                // In matrix form: anchor_with_unity_up = anchor_up_to_unity_up * anchor
-                var rotation = sharedOrigin.ToRotation();
-                var anchorUpAxis = rotation * Vector3.up;
-                transform.rotation = Quaternion.FromToRotation(anchorUpAxis, Vector3.up) * rotation;
+                    // Change the rotation of the anchor in global space to make it so the
+                    // anchor's up-axis is facing Unity's up-axis
+                    // In matrix form: anchor_with_unity_up = anchor_up_to_unity_up * anchor
+                    var rotation = sharedOrigin.ToRotation();
+                    var anchorUpAxis = rotation * Vector3.up;
+                    transform.rotation = Quaternion.FromToRotation(anchorUpAxis, Vector3.up) * rotation;
+                }
             }
         }
     }

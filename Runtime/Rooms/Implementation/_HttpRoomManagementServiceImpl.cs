@@ -1,4 +1,4 @@
-// Copyright 2022-2023 Niantic.
+// Copyright 2022-2024 Niantic.
 
 using System;
 using System.Text;
@@ -25,6 +25,7 @@ namespace Niantic.Lightship.SharedAR.Rooms.Implementation
         private string _apiKey;
 
         private string _createFormat = "https://{0}/room/create";
+        private string _getOrCreateFormat = "https://{0}/room/get_or_create";
         private string _getFormat = "https://{0}/room/get_room";
         private string _destroyFormat = "https://{0}/room/destroy";
         private string _getRoomsForExperienceFormat = "https://{0}/room/get_rooms";
@@ -48,6 +49,24 @@ namespace Niantic.Lightship.SharedAR.Rooms.Implementation
             var response = SendBlockingWebRequest(uri, json, out var s);
 
             if (String.IsNullOrEmpty(response))
+            {
+                status = (RoomManagementServiceStatus)s;
+                return new _CreateRoomResponse();
+            }
+
+            var res = JsonUtility.FromJson<_CreateRoomResponse>(response);
+            status = RoomManagementServiceStatus.Ok;
+            return res;
+        }
+
+        public _CreateRoomResponse GetOrCreateRoom(_CreateRoomRequest request, out RoomManagementServiceStatus status)
+        {
+            var json = JsonUtility.ToJson(request);
+
+            var uri = String.Format(_getOrCreateFormat, _endpoint);
+            var response = SendBlockingWebRequest(uri, json, out var s);
+
+            if (String.IsNullOrEmpty(response) || s != 200)
             {
                 status = (RoomManagementServiceStatus)s;
                 return new _CreateRoomResponse();
@@ -160,6 +179,27 @@ namespace Niantic.Lightship.SharedAR.Rooms.Implementation
 
             var res = JsonUtility.FromJson<_GetRoomForExperienceResponse>(httpResponse.responseData);
             response.GetRoomForExperienceResponse = res;
+            return response;
+        }
+
+        // Async version of GetOrCreateRoom
+        public async Task<_IRoomManagementServiceImpl._Async_CreateRoomResponse> GetOrCreateRoomAsync(_CreateRoomRequest request)
+        {
+            var json = JsonUtility.ToJson(request);
+            var uri = String.Format(_getOrCreateFormat, _endpoint);
+
+            // send a http request
+            var httpResponse = await SendWebRequestAsync(uri, json);
+
+            var response  = new _IRoomManagementServiceImpl._Async_CreateRoomResponse();
+            response.Status = (RoomManagementServiceStatus)httpResponse.status;
+            if (String.IsNullOrEmpty(httpResponse.responseData))
+            {
+                return response;
+            }
+
+            var res = JsonUtility.FromJson<_CreateRoomResponse>(httpResponse.responseData);
+            response.CreateRoomResponse = res;
             return response;
         }
 

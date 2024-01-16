@@ -1,4 +1,4 @@
-// Copyright 2022-2023 Niantic.
+// Copyright 2022-2024 Niantic.
 
 using System;
 using System.Collections.Generic;
@@ -270,6 +270,35 @@ namespace Niantic.Lightship.SharedAR.Rooms
             out IRoom outRoom
         )
         {
+#if NIANTIC_LIGHTSHIP_USE_SERVER_GETORCREATE
+            outRoom = null;
+            if (_serviceImpl == null)
+            {
+                Log.Error("Must initialize RoomManagementService before using");
+                return RoomManagementServiceStatus.BadRequest;
+            }
+
+            var request = new _CreateRoomRequest()
+            {
+                experienceId = roomParams.ExperienceId,
+                name = roomParams.Name,
+                description = roomParams.Description,
+                capacity = roomParams.Capacity,
+                passcode = roomParams.Visibility == RoomVisibility.Private ? roomParams.Passcode : "",
+                region = "AUTO",
+            };
+
+            var response = _serviceImpl.GetOrCreateRoom(request, out var status);
+            if (status != RoomManagementServiceStatus.Ok)
+            {
+                Log.Warning($"Room Management GetOrCreateRoom request failed with status {status}");
+                return status;
+            }
+
+            outRoom = new Room(response.room);
+
+            return RoomManagementServiceStatus.Ok;
+#else
             var status = QueryRoomsByName(roomParams.Name, out var rooms);
             if (status == RoomManagementServiceStatus.NotFound)
             {
@@ -290,6 +319,7 @@ namespace Niantic.Lightship.SharedAR.Rooms
             // Return the first room for now
             outRoom =rooms[0];
             return status;
+#endif
         }
 
         [Obsolete]
@@ -405,6 +435,30 @@ namespace Niantic.Lightship.SharedAR.Rooms
                 return new GetOrCreateRoomAsyncTaskResult(RoomManagementServiceStatus.BadRequest, null);
             }
 
+#if NIANTIC_LIGHTSHIP_USE_SERVER_GETORCREATE
+
+            var request = new _CreateRoomRequest()
+            {
+                experienceId = "",
+                name = roomName,
+                description = roomDescription,
+                capacity = (int) roomCapacity,
+                passcode = "",
+                region = "AUTO",
+            };
+
+            var response = await _serviceImpl.GetOrCreateRoomAsync(request);
+            var status = response.Status;
+            if (status != RoomManagementServiceStatus.Ok)
+            {
+                Log.Warning($"Room Management GetOrCreateRoom request failed with status {status}");
+                return new GetOrCreateRoomAsyncTaskResult(status, null);;
+            }
+            return new GetOrCreateRoomAsyncTaskResult(
+                status,
+                new Room(response.CreateRoomResponse.room));
+
+#else
             var request = new _GetRoomForExperienceRequest() { };
             var resGetRooms = await _serviceImpl.GetRoomsForExperienceAsync(request);
 
@@ -455,6 +509,9 @@ namespace Niantic.Lightship.SharedAR.Rooms
                 return new GetOrCreateRoomAsyncTaskResult(createStatus, null);
             }
             return new GetOrCreateRoomAsyncTaskResult(status, null);
+
+#endif // #NIANTIC_LIGHTSHIP_USE_SERVER_GETORCREATE
+
 #else
             throw new PlatformNotSupportedException("Unsupported platform");
 #endif

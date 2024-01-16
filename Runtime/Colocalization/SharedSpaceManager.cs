@@ -1,4 +1,4 @@
-// Copyright 2022-2023 Niantic.
+// Copyright 2022-2024 Niantic.
 
 using System;
 using System.Collections;
@@ -51,6 +51,7 @@ namespace Niantic.Lightship.SharedAR.Colocalization
         public event Action<SharedSpaceManagerStateChangeEventArgs> sharedSpaceManagerStateChanged;
 
         [SerializeField]
+        [Tooltip("Which tracking system to use for colocalization")]
         private ColocalizationType _colocalizationType;
 
         [SerializeField]

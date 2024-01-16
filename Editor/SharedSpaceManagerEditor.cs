@@ -1,4 +1,4 @@
-// Copyright 2022-2023 Niantic.
+// Copyright 2022-2024 Niantic.
 #if UNITY_EDITOR
 using System;
 using System.IO;
@@ -68,9 +68,11 @@ internal class SharedSpaceManagerEditor : Editor
         var sharedSpaceManager = (SharedSpaceManager)target;
         var colocalizationTypeProperty = serializedObject.FindProperty("_colocalizationType");
         var newColocType =
-            (SharedSpaceManager.ColocalizationType)EditorGUILayout.Popup("Colocalization Type",
+            (SharedSpaceManager.ColocalizationType)EditorGUILayout.Popup(
+                new GUIContent(colocalizationTypeProperty.displayName, colocalizationTypeProperty.tooltip),
                 colocalizationTypeProperty.enumValueIndex,
-                Enum.GetNames(typeof(SharedSpaceManager.ColocalizationType)));
+                Enum.GetNames(typeof(SharedSpaceManager.ColocalizationType))
+            );
 
         switch (newColocType)
         {
