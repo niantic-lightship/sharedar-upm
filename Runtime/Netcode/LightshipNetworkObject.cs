@@ -1,5 +1,5 @@
 // Copyright 2022-2024 Niantic.
-using Niantic.Lightship.AR.Utilities.Log;
+using Niantic.Lightship.AR.Utilities.Logging;
 using Niantic.Lightship.AR.Utilities;
 using UnityEngine;
 using Unity.Netcode;

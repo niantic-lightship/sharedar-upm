@@ -1,7 +1,7 @@
 {
   "name": "com.nianticlabs.lightship.sharedar",
   "displayName": "Niantic Lightship Shared AR Client Plugin",
-  "version": "3.2.0-2401130645",
+  "version": "3.3.0-2402121803",
   "unity": "2021.3",
   "description": "Provides Shared AR capabilities on top of the Niantic Lightship platform.\n* Lightship is a trademark of Niantic Labs Inc., registered in the U.S. and other countries and regions.",
   "keywords": [
@@ -20,7 +20,7 @@
     "url": "https://lightship.dev/"
   },
   "dependencies": {
-    "com.nianticlabs.lightship": "3.2.0-2401130645",
+    "com.nianticlabs.lightship": "3.3.0-2402121803",
     "com.unity.netcode.gameobjects": "1.2.0"
   },
   "documentationUrl": "https://lightship.dev/docs/ardk/",

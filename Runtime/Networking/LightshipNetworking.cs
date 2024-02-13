@@ -7,7 +7,7 @@ using AOT; // MonoPInvokeCallback attribute
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using UnityEngine;
-using Niantic.Lightship.AR.Utilities.Log;
+using Niantic.Lightship.AR.Utilities.Logging;
 using Niantic.Lightship.AR;
 using Niantic.Lightship.AR.Core;
 using Niantic.Lightship.SharedAR.Networking.API;

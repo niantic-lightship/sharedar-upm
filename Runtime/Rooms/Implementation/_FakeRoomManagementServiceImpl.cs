@@ -103,7 +103,15 @@ namespace Niantic.Lightship.SharedAR.Rooms.Implementation
                     room.experienceId.Equals(request.experienceIds.First())
                 )
                 {
-                    roomList.Add(room);
+                    // make order random, as server response may not be deterministic
+                    if (UnityEngine.Random.value < 0.5)
+                    {
+                        roomList.Add(room);
+                    }
+                    else
+                    {
+                        roomList.Insert(0, room);
+                    }
                 }
             }
 

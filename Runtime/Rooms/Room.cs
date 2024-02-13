@@ -1,7 +1,7 @@
 // Copyright 2022-2024 Niantic.
 
 using System.Collections.Generic;
-using Niantic.Lightship.AR.Utilities.Log;
+using Niantic.Lightship.AR.Utilities.Logging;
 using Niantic.Lightship.SharedAR.Colocalization;
 using Niantic.Lightship.SharedAR.Networking;
 using Niantic.Lightship.SharedAR.Datastore;

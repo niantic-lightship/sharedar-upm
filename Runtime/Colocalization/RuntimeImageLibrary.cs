@@ -3,7 +3,7 @@
 using System;
 using UnityEngine;
 using UnityEngine.XR.ARFoundation;
-using Niantic.Lightship.AR.Utilities.Log;
+using Niantic.Lightship.AR.Utilities.Logging;
 using UnityEngine.XR.ARSubsystems;
 
 namespace Niantic.Lightship.SharedAR.Colocalization

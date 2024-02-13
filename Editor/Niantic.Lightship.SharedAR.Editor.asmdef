@@ -1,6 +1,6 @@
 {
     "name": "Niantic.Lightship.SharedAR.Editor",
-    "rootNamespace": "",
+    "rootNamespace": "Niantic.Lightship.SharedAR.Editor",
     "references": [
         "Niantic.Lightship.SharedAR"
     ],

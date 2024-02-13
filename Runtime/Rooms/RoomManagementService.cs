@@ -2,9 +2,10 @@
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Runtime.InteropServices;
 using System.Threading.Tasks;
-using Niantic.Lightship.AR.Utilities.Log;
+using Niantic.Lightship.AR.Utilities.Logging;
 using Niantic.Lightship.SharedAR.Rooms.MarshMessages;
 using Niantic.Lightship.SharedAR.Rooms.Implementation;
 using UnityEngine;
@@ -314,10 +315,14 @@ namespace Niantic.Lightship.SharedAR.Rooms
 
             if (rooms.Count > 1)
             {
-                // TODO: we might want to handle same name room found case in future
+                // sort the room list with same room name by room ID
+                var sortedRooms = rooms.OrderBy(r => r.RoomParams.RoomID).ToList();
+                outRoom = sortedRooms[0];
             }
-            // Return the first room for now
-            outRoom =rooms[0];
+            else
+            {
+                outRoom =rooms[0];
+            }
             return status;
 #endif
         }
@@ -468,16 +473,29 @@ namespace Niantic.Lightship.SharedAR.Rooms
                 var rooms = resGetRooms.GetRoomForExperienceResponse.rooms;
                 if (rooms.Count > 0)
                 {
-                    // found rooms
+                    // find rooms with the name
+                    List<_RoomInternal> roomsWithName = new List<_RoomInternal>();
                     foreach (var room in rooms)
                     {
                         if (room.name == roomName)
                         {
-                            // found one
-                            return new GetOrCreateRoomAsyncTaskResult(
-                                status,
-                                new Room(room));
+                            roomsWithName.Add(room);
                         }
+                    }
+
+                    if (roomsWithName.Count > 0)
+                    {
+                        var room = roomsWithName[0];
+                        if (roomsWithName.Count > 1)
+                        {
+                            // sort by room ID and return the first one, if more than 1 room found
+                            var sortedRooms = roomsWithName.OrderBy(r => r.roomId).ToList();
+                            room = sortedRooms[0];
+                        }
+
+                        return new GetOrCreateRoomAsyncTaskResult(
+                            status,
+                            new Room(room));
                     }
                 }
             }

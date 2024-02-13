@@ -1,12 +1,12 @@
 {
     "name": "Niantic.Lightship.SharedAR",
-    "rootNamespace": "",
+    "rootNamespace": "Niantic.Lightship.SharedAR",
     "references": [
-        "GUID:ebf051e8066a449148e51cebff289cdd",
-        "GUID:a9420e37d7990b54abdef6688edbe313",
-        "GUID:92703082f92b41ba80f0d6912de66115",
-        "GUID:1491147abca9d7d4bb7105af628b223e",
-        "GUID:3b8ed52f1b5c64994af4c4e0aa4b6c4b"
+        "Niantic.Lightship.AR",
+        "Unity.XR.ARFoundation",
+        "Unity.XR.ARSubsystems",
+        "Unity.Netcode.Runtime",
+        "Unity.Netcode.Components"
     ],
     "includePlatforms": [],
     "excludePlatforms": [],

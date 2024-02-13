@@ -5,9 +5,11 @@ using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using AOT; // MonoPInvokeCallback attribute
 using UnityEngine;
-using Niantic.Lightship.AR.Utilities.Log;
+using Niantic.Lightship.AR.Utilities.Logging;
 using Niantic.Lightship.SharedAR.Datastore.Api;
 using Niantic.Lightship.AR.Utilities;
+using IApi = Niantic.Lightship.SharedAR.Datastore.Api.IApi;
+using NativeApi = Niantic.Lightship.SharedAR.Datastore.Api.NativeApi;
 
 namespace Niantic.Lightship.SharedAR.Datastore
 {

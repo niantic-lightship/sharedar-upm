@@ -1,6 +1,6 @@
 // Copyright 2022-2024 Niantic.
+
 using System;
-using System.Runtime.InteropServices;
 using Niantic.Lightship.AR.Utilities;
 
 namespace Niantic.Lightship.SharedAR.Networking
@@ -10,23 +10,23 @@ namespace Niantic.Lightship.SharedAR.Networking
     /// Can be compared with other PeerIDs and used as Keys in Dictionaries.
     /// </summary>
     [PublicAPI]
-    public struct PeerID : IEquatable<PeerID>
+    public readonly struct PeerID : IEquatable<PeerID>
     {
         /// <summary>
         /// The Invalid peer ID returned by functions that have errored.
         /// This PeerID returns 0 from ToUint32.
         /// </summary>
         [PublicAPI]
-        public static PeerID InvalidID = new PeerID(0);
+        public static readonly PeerID InvalidID = new(0);
 
-        private UInt32 _uintId;
+        private readonly uint _uintId;
 
         /// <summary>
         /// Constructor for the PeerID. PeerIDs should be received from the INetworking API,
         /// not manually constructed.
         /// </summary>
         [PublicAPI]
-        public PeerID(UInt32 id)
+        public PeerID(uint id)
         {
             _uintId = id;
         }
@@ -44,7 +44,7 @@ namespace Niantic.Lightship.SharedAR.Networking
         /// UInt32 representation of the PeerID.
         /// </summary>
         [PublicAPI]
-        public UInt32 ToUint32()
+        public uint ToUint32()
         {
             return _uintId;
         }
@@ -74,6 +74,21 @@ namespace Niantic.Lightship.SharedAR.Networking
         public override string ToString()
         {
             return _uintId.ToString();
+        }
+
+        public override bool Equals(object obj)
+        {
+            return obj is PeerID id && Equals(id);
+        }
+
+        public static bool operator ==(PeerID left, PeerID right)
+        {
+            return left.Equals(right);
+        }
+
+        public static bool operator !=(PeerID left, PeerID right)
+        {
+            return !(left == right);
         }
     }
 }

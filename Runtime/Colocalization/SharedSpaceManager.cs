@@ -2,7 +2,7 @@
 
 using System;
 using System.Collections;
-using Niantic.Lightship.AR.Utilities.Log;
+using Niantic.Lightship.AR.Utilities.Logging;
 using Niantic.Lightship.AR.LocationAR;
 using Niantic.Lightship.AR.PersistentAnchors;
 using Niantic.Lightship.AR.Utilities;

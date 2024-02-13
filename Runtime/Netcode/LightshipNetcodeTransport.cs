@@ -2,7 +2,7 @@
 
 using System;
 using System.Collections.Generic;
-using Niantic.Lightship.AR.Utilities.Log;
+using Niantic.Lightship.AR.Utilities.Logging;
 using Niantic.Lightship.SharedAR.Networking;
 using Niantic.Lightship.SharedAR.Rooms;
 using Niantic.Lightship.AR.Utilities;
