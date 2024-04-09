@@ -44,6 +44,7 @@ namespace Niantic.Lightship.SharedAR.Networking
         public const uint RoomNotFoundError = 4401;
         public const uint RoomFullError = 4402;
     }
+    
     /// <summary>
     /// Event args fired from INetworking.NetworkEvent.
     /// </summary>

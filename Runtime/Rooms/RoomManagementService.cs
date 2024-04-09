@@ -271,7 +271,6 @@ namespace Niantic.Lightship.SharedAR.Rooms
             out IRoom outRoom
         )
         {
-#if NIANTIC_LIGHTSHIP_USE_SERVER_GETORCREATE
             outRoom = null;
             if (_serviceImpl == null)
             {
@@ -299,32 +298,6 @@ namespace Niantic.Lightship.SharedAR.Rooms
             outRoom = new Room(response.room);
 
             return RoomManagementServiceStatus.Ok;
-#else
-            var status = QueryRoomsByName(roomParams.Name, out var rooms);
-            if (status == RoomManagementServiceStatus.NotFound)
-            {
-                // Create a new one this case
-                status = CreateRoom(roomParams, out outRoom);
-                return status;
-            }
-            if (status != RoomManagementServiceStatus.Ok)
-            {
-                outRoom = null;
-                return status;
-            }
-
-            if (rooms.Count > 1)
-            {
-                // sort the room list with same room name by room ID
-                var sortedRooms = rooms.OrderBy(r => r.RoomParams.RoomID).ToList();
-                outRoom = sortedRooms[0];
-            }
-            else
-            {
-                outRoom =rooms[0];
-            }
-            return status;
-#endif
         }
 
         [Obsolete]
@@ -440,8 +413,6 @@ namespace Niantic.Lightship.SharedAR.Rooms
                 return new GetOrCreateRoomAsyncTaskResult(RoomManagementServiceStatus.BadRequest, null);
             }
 
-#if NIANTIC_LIGHTSHIP_USE_SERVER_GETORCREATE
-
             var request = new _CreateRoomRequest()
             {
                 experienceId = "",
@@ -462,74 +433,6 @@ namespace Niantic.Lightship.SharedAR.Rooms
             return new GetOrCreateRoomAsyncTaskResult(
                 status,
                 new Room(response.CreateRoomResponse.room));
-
-#else
-            var request = new _GetRoomForExperienceRequest() { };
-            var resGetRooms = await _serviceImpl.GetRoomsForExperienceAsync(request);
-
-            var status = resGetRooms.Status;
-            if (status == RoomManagementServiceStatus.Ok)
-            {
-                var rooms = resGetRooms.GetRoomForExperienceResponse.rooms;
-                if (rooms.Count > 0)
-                {
-                    // find rooms with the name
-                    List<_RoomInternal> roomsWithName = new List<_RoomInternal>();
-                    foreach (var room in rooms)
-                    {
-                        if (room.name == roomName)
-                        {
-                            roomsWithName.Add(room);
-                        }
-                    }
-
-                    if (roomsWithName.Count > 0)
-                    {
-                        var room = roomsWithName[0];
-                        if (roomsWithName.Count > 1)
-                        {
-                            // sort by room ID and return the first one, if more than 1 room found
-                            var sortedRooms = roomsWithName.OrderBy(r => r.roomId).ToList();
-                            room = sortedRooms[0];
-                        }
-
-                        return new GetOrCreateRoomAsyncTaskResult(
-                            status,
-                            new Room(room));
-                    }
-                }
-            }
-
-            // If no room has been made with this app's DefaultExperienceId, the above request
-            // returns "NotFound" instead of "Ok". If a room has been made on the experience before,
-            // even if there's no rooms in the list, it returns "Ok".
-            if (status == RoomManagementServiceStatus.Ok ||
-                status == RoomManagementServiceStatus.NotFound)
-            {
-                // no room matching name criteria. create new one
-                var createRoomRequest = new _CreateRoomRequest()
-                {
-                    experienceId = "",
-                    name = roomName,
-                    description = roomDescription,
-                    capacity = (int)roomCapacity,
-                    passcode = "",
-                    region = "AUTO",
-                };
-                var resCreate = await _serviceImpl.CreateRoomAsync(createRoomRequest);
-                var createStatus = resCreate.Status;
-                if (createStatus == RoomManagementServiceStatus.Ok)
-                {
-                    return new GetOrCreateRoomAsyncTaskResult(
-                        createStatus,
-                        new Room(resCreate.CreateRoomResponse.room));
-                }
-                return new GetOrCreateRoomAsyncTaskResult(createStatus, null);
-            }
-            return new GetOrCreateRoomAsyncTaskResult(status, null);
-
-#endif // #NIANTIC_LIGHTSHIP_USE_SERVER_GETORCREATE
-
 #else
             throw new PlatformNotSupportedException("Unsupported platform");
 #endif

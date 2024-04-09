@@ -236,7 +236,15 @@ namespace Niantic.Lightship.SharedAR.Colocalization
         {
             SharedSpaceTrackingOptions = trackingOptions;
             SharedSpaceRoomOptions = roomOptions;
-            //
+
+            // Prepare a Room to join
+            var lightshipRoomOptions = SharedSpaceRoomOptions as SharedSpaceLightshipRoomOptions;
+            if (lightshipRoomOptions != null)
+            {
+                lightshipRoomOptions.PrepareRoom();
+            }
+
+            // Start tracking
             switch (_colocalizationType)
             {
                 case ColocalizationType.VpsColocalization:
@@ -262,6 +270,13 @@ namespace Niantic.Lightship.SharedAR.Colocalization
                 }
                 case ColocalizationType.ImageTrackingColocalization:
                 {
+#if UNITY_EDITOR
+                    MakeOriginAndAdd<SharedAROrigin>(gameObject.transform);
+                    // Immediately invoke tracking event
+                    var args = new SharedSpaceManagerStateChangeEventArgs();
+                    args.Tracking = true;
+                    sharedSpaceManagerStateChanged?.Invoke(args);
+#else
                     var imageTrackingOptions = SharedSpaceTrackingOptions as SharedSpaceImageTrackingOptions;
                     if (imageTrackingOptions != null)
                     {
@@ -288,6 +303,7 @@ namespace Niantic.Lightship.SharedAR.Colocalization
                         Log.Error("Colocalization type selected and trackingOptions type does not match." +
                             "Both has to be image tracking.");
                     }
+#endif
                     break;
                 }
                 case ColocalizationType.MockColocalization:
@@ -313,12 +329,6 @@ namespace Niantic.Lightship.SharedAR.Colocalization
                     Log.Info("Unknown colocalization type selected. unable to localize");
                     break;
                 }
-            }
-            //
-            var lightshipRoomOptions = SharedSpaceRoomOptions as SharedSpaceLightshipRoomOptions;
-            if (lightshipRoomOptions != null)
-            {
-                lightshipRoomOptions.PrepareRoom();
             }
         }
 
@@ -367,8 +377,26 @@ namespace Niantic.Lightship.SharedAR.Colocalization
                 return null;
             }
 
-            SharedArOriginObject = Instantiate(_sharedArRootPrefab, root, false);
-            var networkObject = SharedArOriginObject.GetComponent<NetworkObject>();
+            NetworkObject networkObject;
+            if (_sharedArRootPrefab)
+            {
+                SharedArOriginObject = Instantiate(_sharedArRootPrefab, root, false);
+                networkObject = SharedArOriginObject.GetComponent<NetworkObject>();
+            }
+            else
+            {
+                // Prefab is not set. Create shared AR root object by code
+                // This should only be used by tests as network object generated this way will have sync issue in Netcode
+                SharedArOriginObject = new GameObject("SharedArRoot");
+                networkObject = SharedArOriginObject.AddComponent<NetworkObject>();
+                networkObject.AlwaysReplicateAsRoot = true;
+                networkObject.SynchronizeTransform = true;
+                networkObject.ActiveSceneSynchronization = false;
+                networkObject.SceneMigrationSynchronization = true;
+                networkObject.SpawnWithObservers = true;
+                networkObject.DontDestroyWithOwner = false;
+                networkObject.AutoObjectParentSync = false;
+            }
 
             // When Netcode connects the host's version of the sharedArOrigin will override
             // the transform of the origin unless we setup this callback to return false.
