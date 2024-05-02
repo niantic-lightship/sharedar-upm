@@ -14,7 +14,7 @@ The SharedAR UPM is Unity package needed in order to use the SharedAR networking
 ### Installing the SharedAR Plugin from Tarball
 0. A prerequisite to using the SharedAR UPM is having the ARDK UPM installed. For more information on installing the ARDK UPM to your project, please see the [ardk-upm ReadMe file](https://github.com/niantic-lightship/ardk-upm/blob/main/README.md). 
 1. Download the plugin packages (`.tgz`) from the latest release
-	- [sharedar_upm](https://github.com/niantic-lightship/sharedar-upm/releases/latest)
+	- [sharedar-upm](https://github.com/niantic-lightship/sharedar-upm/releases/latest)
 2. In your Unity project open the **Package Manager** by selection **Window > Package Manager**. 
 	- From the plus menu on the Package Manager tab, select **Add package from tarball...**
 	- Navigate to where you downloaded the ARDK, select the `.tgz` file you downloaded, and press **Open**. This will install the package in your project's **Packages** folder as the **Niantic Lightship AR Plugin** folder. 
