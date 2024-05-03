@@ -6,7 +6,7 @@ The SharedAR UPM is Unity package needed in order to use the SharedAR networking
 
 ### Installing the SharedAR Plugin with a URL
 0. A prerequisite to using the SharedAR UPM is having the ARDK UPM installed. For more information on installing the ARDK UPM to your project, please see the [ardk-upm ReadMe file](https://github.com/niantic-lightship/ardk-upm/blob/main/README.md). 
-1. In your Unity project open the **Package Manager** by selection **Window > Package Manager**. 
+1. In your Unity project open the **Package Manager** by selecting **Window > Package Manager**. 
 	- From the plus menu on the Package Manager tab, select **Add package from git URL...**
 	- Enter `https://github.com/niantic-lightship/sharedar-upm.git`. 
 	- Click **Yes** to activate the new Input System Package for AR Foundation 5.0 (if prompted)
