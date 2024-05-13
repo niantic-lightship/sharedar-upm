@@ -62,8 +62,6 @@ namespace Niantic.Lightship.SharedAR.Colocalization
         [Tooltip("Fill this field if there's an existing location manager in the scene. Otherwise, this component will make one itself.")]
         private ARLocationManager _arLocationManager;
 
-        private GameObject _arLocationObject;
-        private ARLocation _arLocation;
         private bool _usingCustomArLocationManager;
 
         private ImageTargetColocalization _imageTargetColocalization;
@@ -84,7 +82,6 @@ namespace Niantic.Lightship.SharedAR.Colocalization
         {
             return _colocalizationType;
         }
-
 
         /// <summary>
         /// Getting currently active ISharedSpaceTrackingOptions set in the SharedSpaceManager
@@ -108,11 +105,8 @@ namespace Niantic.Lightship.SharedAR.Colocalization
                     // Add ARPersistentAnchorManager if not available
                     if (!_arLocationManager)
                     {
-                        // No ARLocationManager set. Add ARLocationManager and ARLocation
+                        // No ARLocationManager set. Add ARLocationManager
                         _arLocationManager = gameObject.AddComponent<ARLocationManager>();
-                        _arLocationObject = new GameObject("ARLocation");
-                        _arLocationObject.transform.parent = gameObject.transform;
-                        _arLocation = _arLocationObject.AddComponent<ARLocation>();
                         _usingCustomArLocationManager = false;
                     }
                     else
@@ -192,12 +186,6 @@ namespace Niantic.Lightship.SharedAR.Colocalization
                             }
                         }
 
-                    }
-
-                    // If we created this to wrap a payload, destroy it now
-                    if (_arLocationObject)
-                    {
-                        Destroy(_arLocationObject);
                     }
 
                     break;
