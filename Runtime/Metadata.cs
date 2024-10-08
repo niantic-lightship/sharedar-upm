@@ -4,6 +4,6 @@ namespace Niantic.Lightship.SharedAR.Settings
 {
     public static class Metadata
     {
-        public const string SharedArVersion = "3.8.0-2409081646";
+        public const string SharedArVersion = "3.9.0-2410041643";
     }
 }
