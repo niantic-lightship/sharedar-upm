@@ -248,6 +248,8 @@ namespace Niantic.Lightship.SharedAR.Netcode
         [PublicAPI]
         public override bool StartClient()
         {
+            _isHost = false;
+
             PrepareNetworkSession();
             if (_networking == null) {
                 Log.Warning("Preparing network session failed.");
