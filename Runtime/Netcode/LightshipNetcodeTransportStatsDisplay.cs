@@ -40,6 +40,16 @@ namespace Niantic.Lightship.SharedAR.Netcode
 
         protected void Start()
         {
+            if (_lightshipNetcodeTransport == null)
+            {
+                _lightshipNetcodeTransport = FindFirstObjectByType<LightshipNetcodeTransport>();
+                if (_lightshipNetcodeTransport == null)
+                {
+                    Debug.LogError("Please add LightshipNetcodeTransport to your scene.");
+                    return;
+                }
+            }
+
             DateTime now = DateTime.Now;
             _filePostfix = now.ToString("ddMMyy_HHmmss");
             _button.onClick.AddListener(Hide);

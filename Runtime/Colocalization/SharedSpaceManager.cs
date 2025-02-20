@@ -2,6 +2,7 @@
 
 using System;
 using System.Collections;
+using System.Collections.Generic;
 using Niantic.Lightship.AR.Utilities.Logging;
 using Niantic.Lightship.AR.LocationAR;
 using Niantic.Lightship.AR.PersistentAnchors;
@@ -112,8 +113,6 @@ namespace Niantic.Lightship.SharedAR.Colocalization
                     else
                     {
                         // Custom ARLocationManager is set
-                        // Create the shared root under XR Origin but will reparent later
-                        MakeOriginAndAdd<SharedAROrigin>(gameObject.transform);
                         _usingCustomArLocationManager = true;
                     }
                     break;
@@ -240,10 +239,10 @@ namespace Niantic.Lightship.SharedAR.Colocalization
                     var vpsTrackingOptions = SharedSpaceTrackingOptions as SharedSpaceVpsTrackingOptions;
                     if (vpsTrackingOptions != null)
                     {
+                        // Create the shared root under XR Origin but will reparent later
+                        MakeOriginAndAdd<SharedAROrigin>(gameObject.transform);
                         if (!_usingCustomArLocationManager)
                         {
-                            // Create the shared root under XR Origin but will reparent later
-                            MakeOriginAndAdd<SharedAROrigin>(gameObject.transform);
                             // start vps tracking
                             _arLocationManager.SetARLocations(vpsTrackingOptions._arLocation);
                             _arLocationManager.StartTracking();
@@ -317,6 +316,56 @@ namespace Niantic.Lightship.SharedAR.Colocalization
                     Log.Info("Unknown colocalization type selected. unable to localize");
                     break;
                 }
+            }
+        }
+
+        /// <summary>
+        /// Prepare a Lightship networking Room for Netcode
+        /// @note This is an experimental feature, and is subject to breaking changes or deprecation without notice
+        /// </summary>
+        /// <param name="roomOptions">Room settings</param>
+        [Experimental]
+        public void PrepareRoom(ISharedSpaceRoomOptions roomOptions)
+        {
+            SharedSpaceRoomOptions = roomOptions;
+            var lightshipRoomOptions = SharedSpaceRoomOptions as SharedSpaceLightshipRoomOptions;
+            lightshipRoomOptions?.PrepareRoom();
+        }
+
+        /// <summary>
+        /// Disconnect from the Lightship networking Room
+        /// @note This is an experimental feature, and is subject to breaking changes or deprecation without notice
+        /// </summary>
+        [Experimental]
+        public void LeaveRoom()
+        {
+            SharedSpaceRoomOptions.Room.Leave();
+            SharedSpaceRoomOptions = null;
+        }
+
+        /// <summary>
+        /// Create a shared AR origin object under the given persistent anchor.
+        /// @note This is an experimental feature, and is subject to breaking changes or deprecation without notice
+        /// </summary>
+        /// <param name="anchor">A parent ARPersistentAnchor for the shared AR origin</param>
+        /// <returns>SharedAROrigin object created</returns>
+        [Experimental]
+        public SharedAROrigin CreateSharedOrigin(ARPersistentAnchor anchor)
+        {
+            return MakeOriginAndAdd<SharedAROrigin>(anchor.transform);
+        }
+
+        /// <summary>
+        /// Destroy the shared AR origin
+        /// @note This is an experimental feature, and is subject to breaking changes or deprecation without notice
+        /// </summary>
+        [Experimental]
+        public void DestroySharedArOrigin()
+        {
+            if (SharedArOriginObject)
+            {
+                Destroy(SharedArOriginObject);
+                SharedArOriginObject = null;
             }
         }
 
