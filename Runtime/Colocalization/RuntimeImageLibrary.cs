@@ -1,6 +1,7 @@
 // Copyright 2022-2025 Niantic.
 
 using System;
+using System.Collections;
 using UnityEngine;
 using UnityEngine.XR.ARFoundation;
 using Niantic.Lightship.AR.Utilities.Logging;
@@ -8,128 +9,89 @@ using UnityEngine.XR.ARSubsystems;
 
 namespace Niantic.Lightship.SharedAR.Colocalization
 {
-    // Convenience component that allows for cross platform static image tracking without version
-    // control woes.
+    // Convenience class that allows for dynamic image tracking. This class takes in a disabled
+    // ARTrackedImageManager and a Texture2D with its width in real life meters to use as image trackers.
+    //
+    // The main logic of the class waits for the ARSession to be started, loads the 
+    // images into the session, waits for the images to be registered with the AR Image Tracking
+    // system, then enables the ARTrackedImageManager which will look for the passed images.
+    //
     // @note This is an experimental feature. Experimental features should not be used in
     // production products as they are subject to breaking changes, not officially supported, and
     // may be deprecated without notice
-    internal class RuntimeImageLibrary : MonoBehaviour
+    internal class RuntimeImageLibrary
     {
-        internal ARTrackedImageManager _imageTracker;
+        private Texture2D _image;
+        private float _widthInMeters;
+        private ARTrackedImageManager _imageTracker;
+        internal string TrackingImageName { get; private set; }
 
-        internal struct ImageAndWidth
+        internal RuntimeImageLibrary(ARTrackedImageManager imageTracker, Texture2D image, float widthInMeters)
         {
-            public Texture2D textureInRBG24;
-            public float widthInMeters;
+            _imageTracker = imageTracker;
+            _imageTracker.enabled = false;
+            _imageTracker.requestedMaxNumberOfMovingImages = 1;
+
+            _image = image;
+            _widthInMeters = widthInMeters;
         }
 
-        internal ImageAndWidth[] _images;
-
-        private AddReferenceImageJobState _imageJob;
-        private MutableRuntimeReferenceImageLibrary _mutableLibrary;
-        private bool _isRuntimeImageLibraryInitialized;
-        public string TrackingImageName { get; private set; }
-
-        private AddReferenceImageJobStatus _previousStatus;
-
-        protected void Start()
+        internal IEnumerator InitializeRuntimeImageLibrary()
         {
-            _isRuntimeImageLibraryInitialized = false;
-            ARSession.stateChanged += OnArSessionStateChange;
-            if (ARSession.state == ARSessionState.SessionTracking)
+            // Wait for AR Session to start
+            while (ARSession.state != ARSessionState.SessionTracking)
             {
-                InitializeRuntimeImageLibrary();
+                yield return null;
             }
-        }
 
-        private void OnDisable()
-        {
-            ARSession.stateChanged -= OnArSessionStateChange;
-        }
+            TrackingImageName = _image.name;
 
-        private void OnArSessionStateChange(ARSessionStateChangedEventArgs args)
-        {
-            if (args.state == ARSessionState.SessionTracking)
-            {
-                InitializeRuntimeImageLibrary();
-            }
-        }
-        private void InitializeRuntimeImageLibrary()
-        {
             // Check if reference image library already exists and image was registered
             var refImageLibrary = _imageTracker.referenceLibrary;
-            if (refImageLibrary != null && _images.Length > 0)
+            if (refImageLibrary != null)
             {
-                var image = _images[0];
-                for (var i=0; i<refImageLibrary.count; i++)
+                for (var i = 0; i < refImageLibrary.count; i++)
                 {
                     var refimg = refImageLibrary[i];
-                    if (refimg.name == image.textureInRBG24.name &&
-                        refimg.texture == image.textureInRBG24)
+                    if (refimg.name == _image.name &&
+                        refimg.texture == _image)
                     {
                         // target image is found in the existing image library. Ready to start tracking
-                        _mutableLibrary = refImageLibrary as MutableRuntimeReferenceImageLibrary;
                         _imageTracker.enabled = true;
-                        TrackingImageName = refimg.name;
-                        enabled = false;
-                        return;
+                        yield break;
                     }
                 }
             }
 
             // No image library yet. Create a new one
-            if (refImageLibrary == null)
-            {
-                RuntimeReferenceImageLibrary runtimeLibrary = _imageTracker.CreateRuntimeLibrary();
-                _mutableLibrary = runtimeLibrary as MutableRuntimeReferenceImageLibrary;
-                _imageTracker.referenceLibrary = _mutableLibrary;
-            }
+            RuntimeReferenceImageLibrary runtimeLibrary = _imageTracker.CreateRuntimeLibrary();
+            var mutableLibrary = runtimeLibrary as MutableRuntimeReferenceImageLibrary;
+            _imageTracker.referenceLibrary = mutableLibrary;
 
             // Static dictionary of images taken by the user from the rest of the game.
-            foreach (var image in _images)
-            {
-                _imageJob =  _mutableLibrary.ScheduleAddImageWithValidationJob(
-                    image.textureInRBG24,
-                    image.textureInRBG24.name,
-                    image.widthInMeters
-                );
-                TrackingImageName = image.textureInRBG24.name;
-                break;
-            }
+            var job = mutableLibrary.ScheduleAddImageWithValidationJob(
+                _image,
+                _image.name,
+                _widthInMeters
+            );
 
-            _isRuntimeImageLibraryInitialized = true;
+            yield return new WaitUntil(() => job.jobHandle.IsCompleted);
+
+            switch (job.status) {
+                case AddReferenceImageJobStatus.ErrorInvalidImage:
+                    Log.Error("RuntimeImageLibrary failed, ErrorInvalidImage");
+                    break;
+                case AddReferenceImageJobStatus.ErrorUnknown:
+                    Log.Error("RuntimeImageLibrary failed, ErrorUnknown");
+                    break;
+
+                case AddReferenceImageJobStatus.Success:
+                    _imageTracker.enabled = true;
+                    break;
+
+                default:
+                    break;
+            }
         }
-
-        protected void Update()
-        {
-            if (!_isRuntimeImageLibraryInitialized)
-            {
-                return;
-            }
-
-            if (_previousStatus != AddReferenceImageJobStatus.Success &&
-                _imageJob.status == AddReferenceImageJobStatus.Success)
-            {
-                // Enable ARTrackedImageManager after image library is ready
-                _imageTracker.enabled = true;
-                enabled = false;
-            }
-            if (_imageJob.status  == AddReferenceImageJobStatus.Pending)
-            {
-                // do nothing
-            }
-            else if (_imageJob.status == AddReferenceImageJobStatus.ErrorInvalidImage)
-            {
-                Log.Error("RuntimeImageLibrary failed, ErrorInvalidImage");
-                enabled = false;
-            }
-            else if (_imageJob.status == AddReferenceImageJobStatus.ErrorUnknown)
-            {
-                Log.Error("RuntimeImageLibrary failed, ErrorUnknown");
-                enabled = false;
-            }
-
-            _previousStatus = _imageJob.status;
-        }
-}
+    }
 }

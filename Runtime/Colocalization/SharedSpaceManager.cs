@@ -269,15 +269,12 @@ namespace Niantic.Lightship.SharedAR.Colocalization
                     {
                         // Add image tracking
                         var arImageTrackedManager = gameObject.AddComponent<ARTrackedImageManager>();
-                        arImageTrackedManager.requestedMaxNumberOfMovingImages = 1;
-                        arImageTrackedManager.enabled = false;
-                        // TODO: Refactor RuntimeImageLibrary to simplify code here
-                        var imageLib = gameObject.AddComponent<RuntimeImageLibrary>();
-                        imageLib._imageTracker = arImageTrackedManager;
-                        imageLib._images = new RuntimeImageLibrary.ImageAndWidth[1];
-                        imageLib._images[0] = new RuntimeImageLibrary.ImageAndWidth();
-                        imageLib._images[0].textureInRBG24 = imageTrackingOptions._targetImage;
-                        imageLib._images[0].widthInMeters = imageTrackingOptions._widthInMeters;
+
+                        var imageLib = new RuntimeImageLibrary(
+                            arImageTrackedManager,
+                            imageTrackingOptions._targetImage,
+                            imageTrackingOptions._widthInMeters);
+                        StartCoroutine(imageLib.InitializeRuntimeImageLibrary());
 
                         // Add ImageTrackingSharedAROrigin to the sharedOrigin object
                         var sharedOrigin = MakeOriginAndAdd<ImageTrackingSharedAROrigin>(gameObject.transform);
